@@ -1,0 +1,10 @@
+services:
+  postgres:
+    build: ./postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: my-secret-pw
+    volumes:
+      - ./postgres/init.d:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
