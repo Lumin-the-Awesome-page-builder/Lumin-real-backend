@@ -1,0 +1,36 @@
+name: Push pipeline
+
+on: push
+
+jobs:
+  validate-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: DeLaGuardo/setup-clj-kondo@master
+        with:
+          version: '2020.04.05'
+
+      - uses: actions/checkout@v1
+
+      - name: Prepare java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install Clojure CLI
+        uses: DeLaGuardo/setup-clojure@12.5
+        with:
+          cli: latest
+          clj-kondo: latest
+          cljfmt: latest
+
+      - name: Check format
+        run: cljfmt check
+
+      - name: Lint
+        run: clj-kondo --lint src
+
+      - name: Test
+        run: clojure -X:test
+
