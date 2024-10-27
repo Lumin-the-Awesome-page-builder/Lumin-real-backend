@@ -6,9 +6,9 @@
 (defn create-system
   []
   (component/system-map
-    :datasource (datasource-component)
+   :datasource (datasource-component)
 
-    :http-server-component
-    (component/using
-      (create-server)
-      [:datasource])))
+   :http-server-component
+   (component/using
+    (create-server)
+    [:datasource])))
