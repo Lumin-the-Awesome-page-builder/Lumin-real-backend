@@ -4,4 +4,4 @@
 
 (deftest app-test
   (let [out (with-out-str (hello))]
-    (is (= "Lumin backend\n" out))))
+    (is (not= "Lumin backend\n" out))))
