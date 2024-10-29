@@ -5,7 +5,6 @@
 (defn get-all-projects
   [ds authorized-id]
   (let [projects (library-model/get-all-user-projects ds authorized-id)]
-    (println projects)
     (json/write-str projects)))
 
 (defn get-all-widgets

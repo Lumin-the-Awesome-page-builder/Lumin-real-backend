@@ -5,11 +5,12 @@
 
 (defn prefixed [url] (str "/user/library" url))
 
-(def routes [(GET (prefixed "/widgets") request
-               (let [{:keys [datasource]} (:deps request)
-                     {:keys [sub]} (:authorized request)]
-                 (response/response (get-all-widgets datasource sub))))
-             (GET (prefixed "/projects") request
-               (let [{:keys [datasource]} (:deps request)
-                     {:keys [sub]} (:authorized request)]
-                 (response/response (get-all-projects datasource sub))))])
+(defn routes []
+  [(GET (prefixed "/widgets") request
+     (let [{:keys [datasource]} (:deps request)
+           {:keys [sub]} (:authorized request)]
+       (response/response (get-all-widgets datasource sub))))
+   (GET (prefixed "/projects") request
+     (let [{:keys [datasource]} (:deps request)
+           {:keys [sub]} (:authorized request)]
+       (response/response (get-all-projects datasource sub))))])

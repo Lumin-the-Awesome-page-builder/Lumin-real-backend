@@ -7,7 +7,7 @@
             [ring.middleware.json :refer [wrap-json-params]]
             [components.config :refer [fetch-config]]
             [components.http-server.router :refer [app-routes]]
-            [components.http-server.middleware :refer [wrap-deps wrap-jwt-guard wrap-exceptions-handling wrap-request-logging]])
+            [components.http-server.middleware :as middlewares])
   (:import (org.eclipse.jetty.server Server)))
 
 (defrecord HttpServerComponent
@@ -18,14 +18,14 @@
     (log/info "Start HttpServer on :" (-> config :http-server :port))
     (let [server (jetty/run-jetty
                   (-> app-routes
+                      (middlewares/wrap-exceptions-handling)
+                      (middlewares/wrap-jwt-guard)
+                      (middlewares/wrap-deps component)
                       (wrap-keyword-params)
                       (wrap-params)
                       (wrap-json-params)
-                      (wrap-jwt-guard)
-                      (wrap-exceptions-handling)
-                      (wrap-request-logging)
-                      (wrap-deps component))
-                  (-> config :http-server))]
+                      (middlewares/wrap-request-logging))
+                  (:http-server config))]
       (assoc component :server server)))
 
   (stop [component]
