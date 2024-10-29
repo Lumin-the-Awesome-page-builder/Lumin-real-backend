@@ -1,6 +1,7 @@
 (ns components.datasource
   (:require [clojure.tools.logging :as log]
             [next.jdbc.connection :as connection]
+            [com.stuartsierra.component :as component]
             [components.config :refer [fetch-config]])
   (:import (com.zaxxer.hikari HikariDataSource)
            (org.flywaydb.core Flyway)))
@@ -19,3 +20,5 @@
                           (locations (into-array String ["classpath:database/migrations"]))
                           (table "schema_version")
                           (load)))))))
+
+(def debug-source (component/start (datasource-component)))
