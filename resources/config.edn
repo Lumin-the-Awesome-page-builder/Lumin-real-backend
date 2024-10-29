@@ -1,5 +1,6 @@
 {:http-server {:port 8080
                :join? false}
+ :jwt-secret #include "./.jwt.edn"
  :database {:jdbcUrl "jdbc:postgresql://localhost:5432/lumin"
             :username "postgres"
             :password #include "./.secrets.edn"}}
