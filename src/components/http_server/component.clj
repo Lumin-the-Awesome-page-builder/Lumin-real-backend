@@ -1,34 +1,14 @@
-(ns components.http-server
+(ns components.http-server.component
   (:require [clojure.tools.logging :as log]
             [com.stuartsierra.component :as component]
-            [compojure.core :refer [routes GET POST]]
             [ring.adapter.jetty :as jetty]
             [ring.middleware.keyword-params :refer [wrap-keyword-params]]
             [ring.middleware.params :refer [wrap-params]]
             [ring.middleware.json :refer [wrap-json-params]]
-            [ring.util.response :as response]
-            [service.test-crud :refer [get-one get-all create]]
-            [components.config :refer [fetch-config]])
+            [components.config :refer [fetch-config]]
+            [components.http-server.router :refer [app-routes]]
+            [components.http-server.middleware :refer [wrap-deps wrap-jwt-guard]])
   (:import (org.eclipse.jetty.server Server)))
-
-(def app-routes
-  (routes
-   (POST "/" request
-     (let [{:keys [datasource]} (:deps request)
-           {:keys [value]} (:params request)]
-       (response/response (create datasource value))))
-   (GET "/" request
-     (let [{:keys [datasource]} (:deps request)]
-       (response/response (get-all datasource))))
-   (GET "/:id" request
-     (let [{:keys [datasource]} (:deps request)
-           {:keys [id]} (:params request)]
-       (response/response (get-one datasource id))))))
-
-(defn wrap-deps
-  [handler deps]
-  (fn [request]
-    (handler (assoc request :deps deps))))
 
 (defrecord HttpServerComponent
            [config datasource]
@@ -41,6 +21,7 @@
                       (wrap-keyword-params)
                       (wrap-params)
                       (wrap-json-params)
+                      (wrap-jwt-guard)
                       (wrap-deps component))
                   (-> config :http-server))]
       (assoc component :server server)))
