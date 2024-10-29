@@ -9,3 +9,5 @@
   (reset! system (-> @system
                      (component/stop-system)
                      (component/start-system))))
+
+;(reload-system)
