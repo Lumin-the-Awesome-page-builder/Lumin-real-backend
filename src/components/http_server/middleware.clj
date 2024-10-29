@@ -12,7 +12,7 @@
 
 (defn- extract-bearer [headers]
   (-> headers
-      (:Authorization)
+      (get "authorization")
       (str/split #"\s")
       (second)))
 
@@ -42,6 +42,6 @@
     (try
       (handler request)
       (catch Exception e
-        (log/error "Uncaught exception: " e)
+        (log/error "Uncaught exception: " (.getMessage e))
         (-> (response/response {:status 500 :error (.getMessage e)})
             (response/status 500))))))
