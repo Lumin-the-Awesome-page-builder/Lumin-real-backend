@@ -24,7 +24,8 @@
                       (wrap-keyword-params)
                       (wrap-params)
                       (wrap-json-params)
-                      (middlewares/wrap-request-logging))
+                      (middlewares/wrap-request-logging)
+                      (middlewares/wrap-content-type-json))
                   (:http-server config))]
       (assoc component :server server)))
 

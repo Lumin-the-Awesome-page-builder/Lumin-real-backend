@@ -35,8 +35,7 @@
   [handler]
   (fn [request]
     (log/info "New incoming request" (:request-method request) (:uri request) (:params request) (:headers request))
-    (-> (handler request)
-        (response/header "Content-Type" "application/json"))))
+    (handler request)))
 
 (defn- parse-ex [ex]
   (case (.getMessage ex)
@@ -56,3 +55,8 @@
           (-> (response/response (json/write-str ex))
               (response/header "Content-Type" "application/json")
               (response/status (:status ex))))))))
+
+(defn wrap-content-type-json
+  [handler]
+  (fn  [request]
+    (response/header (handler request) "Content-Type" "application/json")))

@@ -5,7 +5,7 @@
   [ds user-id]
   (database/execute!
    ds
-   {:select [:id :public :stars :name]
+   {:select [:id :public :stars :name :created_at]
     :from [:project]
     :where [:= :owner_id user-id]}))
 
@@ -13,6 +13,6 @@
   [ds user-id]
   (database/execute!
    ds
-   {:select [:id :public :stars :name]
+   {:select [:id :public :stars :name :created_at]
     :from [:widget]
     :where [:= :owner_id user-id]}))
