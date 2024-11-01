@@ -39,7 +39,6 @@
 
 (defn- parse-ex [ex]
   (case (.getMessage ex)
-    "Forbidden" {:status 403 :error ""}
     "Bad request" (into {:status 400} (ex-data ex))
     "Not found" (into {:status 404} (ex-data ex))
     {:status 500 :error "Internal server error"}))
@@ -52,6 +51,7 @@
       (catch Exception ex
         (log/error "Uncaught exception: " (.getMessage ex))
         (let [ex (parse-ex ex)]
+          (log/error "On return: " ex)
           (-> (response/response (json/write-str ex))
               (response/header "Content-Type" "application/json")
               (response/status (:status ex))))))))
@@ -59,4 +59,6 @@
 (defn wrap-content-type-json
   [handler]
   (fn  [request]
-    (response/header (handler request) "Content-Type" "application/json")))
+    (-> request
+        (handler)
+        (response/header "Content-Type" "application/json"))))

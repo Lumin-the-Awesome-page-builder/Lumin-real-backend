@@ -9,7 +9,7 @@
     (throw (ex-info "Not found" {:errors "Widget not found"})))
   (if (and widget (= (:owner_id widget) user-id))
     widget
-    (throw (ex-info "Forbidden" {}))))
+    (throw (ex-info "Not found" {}))))
 
 (defn get-by-id
   [ds authorized-id widget-id]

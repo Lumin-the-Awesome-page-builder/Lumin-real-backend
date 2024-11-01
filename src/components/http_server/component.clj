@@ -5,6 +5,7 @@
             [ring.middleware.keyword-params :refer [wrap-keyword-params]]
             [ring.middleware.params :refer [wrap-params]]
             [ring.middleware.json :refer [wrap-json-params]]
+            [ring.middleware.cors :refer [wrap-cors]]
             [components.config :refer [fetch-config]]
             [components.http-server.router :refer [app-routes]]
             [components.http-server.middleware :as middlewares])
@@ -24,6 +25,8 @@
                       (wrap-keyword-params)
                       (wrap-params)
                       (wrap-json-params)
+                      (wrap-cors :access-control-allow-origin [#".*"]
+                                 :access-control-allow-methods [:get :put :post :delete :patch])
                       (middlewares/wrap-request-logging)
                       (middlewares/wrap-content-type-json))
                   (:http-server config))]

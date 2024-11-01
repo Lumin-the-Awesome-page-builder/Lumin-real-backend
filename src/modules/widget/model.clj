@@ -25,12 +25,14 @@
      ds
      {:delete-from [:widget_tags]
       :where [:= :widget_id widget-id]})
-    (database/execute!
-     ds
-     {:insert-into [:widget_tags]
-      :columns [:widget_id :tag]
-      :values pairs
-      :returning [:tag]})))
+    (if (not-empty pairs)
+      (database/execute!
+       ds
+       {:insert-into [:widget_tags]
+        :columns [:widget_id :tag]
+        :values pairs
+        :returning [:tag]})
+      [])))
 
 (defn get-tags
   [ds widget-id]

@@ -25,12 +25,14 @@
      ds
      {:delete-from [:project_tags]
       :where [:= :project_id id]})
-    (database/execute!
-     ds
-     {:insert-into [:project_tags]
-      :columns [:project_id :tag]
-      :values pairs
-      :returning [:tag]})))
+    (if (not-empty pairs)
+      (database/execute!
+       ds
+       {:insert-into [:project_tags]
+        :columns [:project_id :tag]
+        :values pairs
+        :returning [:tag]})
+      [])))
 
 (defn get-tags
   [ds project-id]

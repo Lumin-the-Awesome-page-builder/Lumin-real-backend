@@ -4,6 +4,7 @@
         aero/aero {:mvn/version "1.1.6"}
         org.clojure/data.json {:mvn/version "2.5.0"}
         ring/ring-json {:mvn/version "0.5.1"}
+        ring-cors/ring-cors {:mvn/version "0.1.13"}
 
         metosin/malli {:mvn/version "0.2.1"}
 
