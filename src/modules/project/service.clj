@@ -9,7 +9,7 @@
     (throw (ex-info "Not found" {:errors "Project not found"})))
   (if (and project (= (:owner_id project) user-id))
     project
-    (throw (ex-info "Forbidden" {}))))
+    (throw (ex-info "Not found" {}))))
 
 (defn get-by-id
   [ds authorized-id project-id]
