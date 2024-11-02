@@ -25,7 +25,7 @@
                       (wrap-keyword-params)
                       (wrap-params)
                       (wrap-json-params)
-                      (wrap-cors :access-control-allow-origin [#".*"]
+                      (wrap-cors :access-control-allow-origin [#"lumin.dudosyka.ru"]
                                  :access-control-allow-methods [:get :put :post :delete :patch])
                       (middlewares/wrap-request-logging)
                       (middlewares/wrap-content-type-json))
