@@ -12,30 +12,46 @@
     (handler (assoc request :deps deps))))
 
 (defn- extract-bearer [headers]
-  (-> headers
-      (get "authorization")
-      (str/split #"\s")
-      (second)))
+  (try
+    (-> headers
+        (get "authorization")
+        (str/split #"\s")
+        (second))
+    (catch Exception ex
+      (log/info "Bearer extracting failed due to: " ex)
+      nil)))
 
 (defn- unsign [token]
-  (let [secret (-> (fetch-config) (:jwt-secret))]
-    (select-keys (jwt/unsign token secret) [:sub])))
+  (try
+    (let [secret (-> (fetch-config) (:jwt-secret))]
+      (select-keys (jwt/unsign token secret) [:sub]))
+    (catch Exception ex
+      (log/info "Unsigning failed due to: " ex)
+      nil)))
 
 (defn wrap-jwt-guard
   [handler]
   (fn [request]
-    (try
+    (if (= (-> request :request-method) :options)
+      (handler request)
       (let [{:keys [headers]} request
-            token (extract-bearer headers)]
-        (handler (assoc request :authorized (unsign token))))
-      (catch RuntimeException _
-        {:status 403}))))
+            authorized (-> headers (extract-bearer) (unsign))]
+        (if authorized
+          (do
+            (log/info "Authorized user: " authorized)
+            (handler (assoc request :authorized authorized)))
+          {:status 403})))))
 
 (defn wrap-request-logging
   [handler]
   (fn [request]
     (log/info "New incoming request" (:request-method request) (:uri request) (:params request) (:headers request))
-    (handler request)))
+    (let [response (handler request)]
+      (log/info "On response: ")
+      (log/info "Status: " (:status response))
+      (log/info "Headers: " (:headers response))
+      (log/info "Body: " (:body response))
+      response)))
 
 (defn- parse-ex [ex]
   (case (.getMessage ex)
@@ -62,3 +78,11 @@
     (-> request
         (handler)
         (response/header "Content-Type" "application/json"))))
+
+(defn wrap-not-found
+  [handler]
+  (fn [request]
+    (let [response (handler request)]
+      (if (:status response)
+        response
+        {:status 404}))))

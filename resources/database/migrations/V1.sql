@@ -33,21 +33,21 @@ create table widget (
 );
 
 create table project (
-     id serial primary key,
-     name text,
-     data text,
-     public bool default false,
-     stars int default 0,
-     owner_id int,
-     category_id int default null,
-     constraint fk_project_owner_id foreign key (owner_id)
-         references users
-         on delete cascade
-         on update cascade,
-     constraint fk_project_category_id foreign key (category_id)
-         references category
-         on delete set null
-         on update set null
+    id serial primary key,
+    name text,
+    data text,
+    public bool default false,
+    stars int default 0,
+    owner_id int,
+    category_id int default null,
+    constraint fk_project_owner_id foreign key (owner_id)
+        references users
+        on delete cascade
+        on update cascade,
+    constraint fk_project_category_id foreign key (category_id)
+        references category
+        on delete set null
+        on update set null
 );
 
 create table widget_tags (

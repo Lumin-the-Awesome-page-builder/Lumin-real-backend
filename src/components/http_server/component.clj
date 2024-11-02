@@ -27,13 +27,14 @@
                       (wrap-json-params)
                       (wrap-cors :access-control-allow-origin [#".*"]
                                  :access-control-allow-methods [:get :put :post :delete :patch])
-                      (middlewares/wrap-request-logging)
-                      (middlewares/wrap-content-type-json))
+                      (middlewares/wrap-content-type-json)
+                      (middlewares/wrap-not-found)
+                      (middlewares/wrap-request-logging))
                   (:http-server config))]
       (assoc component :server server)))
 
   (stop [component]
-    (log/info "Stop HttpServer" component)
+    (log/info "Stopping HttpServer..." component)
     (when-let [^Server server (:server component)]
       (log/info "Server found")
       (.stop server))

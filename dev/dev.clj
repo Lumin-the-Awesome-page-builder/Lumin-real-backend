@@ -1,7 +1,6 @@
 (ns dev
   (:require [clojure.tools.logging :as log]
             [com.stuartsierra.component :as component]
-            [components.datasource :refer [datasource-component]]
             [core :refer [create-system]]))
 
 (def system (atom (component/start-system (create-system))))
@@ -11,6 +10,6 @@
                      (component/stop-system)
                      (component/start-system))))
 
-(def debug-source (component/start (datasource-component)))
+;(def debug-source (component/start (datasource-component)))
 
 ;(reload-system)
