@@ -1,5 +1,8 @@
+/Lumin-backend.iml
+/Lumin-backend.jar
+/classes
+/target
 .idea
 .cpcache
 .clj-kondo/.cache
-Lumin-backend.iml
 .nrepl-port

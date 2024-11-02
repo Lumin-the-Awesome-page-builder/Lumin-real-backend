@@ -1,4 +1,5 @@
-{:deps {org.clojure/tools.logging {:mvn/version "1.3.0"}
+{:deps {org.clojure/clojure {:mvn/version "1.12.0"}
+        org.clojure/tools.logging {:mvn/version "1.3.0"}
         clj-log4j2/clj-log4j2 {:mvn/version "0.4.0"}
 
         aero/aero {:mvn/version "1.1.6"}
@@ -32,6 +33,11 @@
                   :extra-deps {io.github.cognitect-labs/test-runner
                                {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
                   :main-opts ["-m" "cognitect.test-runner"]
-                  :exec-fn cognitect.test-runner.api/test}}
+                  :exec-fn cognitect.test-runner.api/test}
+           :uberjar {
+                     :replace-deps {uberdeps/uberdeps {:mvn/version "1.4.0"}}
+                     :replace-paths ["src" "resources" "deploy" "classes"]
+                     :main-opts ["-m" "uberdeps.uberjar"]}}
 
- :paths ["src" "resources" "dev"]}
+
+ :paths ["src" "resources" "dev" "deploy" "classes"]}
