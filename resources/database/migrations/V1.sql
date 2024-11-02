@@ -1,6 +1,12 @@
-create table "user" (
+create table users (
     id serial primary key,
-    login text
+    login text,
+    hash text,
+    lastLogin bigint,
+    serviceName text default 'common',
+    internalServiceId bigint default 0,
+    createdAt timestamptz,
+    updatedAt timestamptz
 );
 
 create table category (
@@ -17,7 +23,7 @@ create table widget (
     owner_id int,
     category_id int default null,
     constraint fk_widget_owner_id foreign key (owner_id)
-        references "user"
+        references users
         on delete cascade
         on update cascade,
     constraint fk_widget_category_id foreign key (category_id)
@@ -35,7 +41,7 @@ create table project (
      owner_id int,
      category_id int default null,
      constraint fk_project_owner_id foreign key (owner_id)
-         references "user"
+         references users
          on delete cascade
          on update cascade,
      constraint fk_project_category_id foreign key (category_id)
