@@ -3,7 +3,7 @@
             [ring.util.response :as response]
             [modules.library.service :refer [get-all-projects get-all-widgets]]))
 
-(defn prefixed [url] (str "lumin/user/library" url))
+(defn prefixed [url] (str "/lumin/user/library" url))
 
 (defn routes []
   [(GET (prefixed "/widgets") request

@@ -4,7 +4,7 @@
             [ring.util.response :as response]
             [modules.project.service :refer [get-by-id patch create remove]]))
 
-(defn prefixed [url] (str "lumin/project" url))
+(defn prefixed [url] (str "/lumin/project" url))
 
 (defn routes []
   [(GET (prefixed "/:id") request
