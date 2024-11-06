@@ -69,3 +69,41 @@
     (json/write-str (if remove-result
                       {:status 200}
                       {:status 400}))))
+
+(defn- replace-by-path
+  [obj path on-replace]
+  (when (not obj)
+    (throw (ex-info "Bad request" {:error "Bad path provided"})))
+  (if (zero? (count path))
+    (let [key-on-replace (keyword (:key on-replace))]
+      (when (not (get obj key-on-replace))
+        (throw (ex-info "Bad request" {:error "Bad item provided"})))
+      (assoc obj key-on-replace on-replace))
+    (let [on-search (keyword (first path))
+          replaced (replace-by-path (->> on-search
+                                         (get obj)
+                                         (:children)) (drop 1 path) on-replace)
+          replaced (assoc (get obj on-search) :children replaced)]
+      (assoc obj on-search replaced))))
+
+(def PatchProjectTreeSpec
+  [:map
+   [:path [:sequential string?]]
+   [:data :map]])
+
+(defn patch-tree
+  [ds authorized-id project-id patch-project-tree]
+  (let [validated (validator/validate PatchProjectTreeSpec patch-project-tree)
+        project (->> project-id
+                     (get-project ds)
+                     (has-access? authorized-id))
+        root-children (-> project
+                          (:data)
+                          (json/read-json))
+        replaced-tree (-> (replace-by-path
+                           root-children
+                           (:path validated)
+                           (:data validated))
+                          (json/write-str))]
+    (patch-project ds project-id (assoc project :data replaced-tree))
+    replaced-tree))
