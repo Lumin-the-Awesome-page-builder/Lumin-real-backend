@@ -70,17 +70,19 @@
                       {:status 200}
                       {:status 400}))))
 
-(defn- place-by-path
+(defn- replace-by-path
   [obj path on-replace]
   (when (not obj)
     (throw (ex-info "Bad request" {:error "Bad path provided"})))
   (if (zero? (count path))
     (let [key-on-replace (keyword (:key on-replace))]
+      (when (not (get obj key-on-replace))
+        (throw (ex-info "Bad request" {:error "Bad item provided"})))
       (assoc obj key-on-replace on-replace))
     (let [on-search (keyword (first path))
-          replaced (place-by-path (->> on-search
-                                       (get obj)
-                                       (:children)) (drop 1 path) on-replace)
+          replaced (replace-by-path (->> on-search
+                                         (get obj)
+                                         (:children)) (drop 1 path) on-replace)
           replaced (assoc (get obj on-search) :children replaced)]
       (assoc obj on-search replaced))))
 
@@ -98,7 +100,7 @@
         root-children (-> project
                           (:data)
                           (json/read-json))
-        replaced-tree (-> (place-by-path
+        replaced-tree (-> (replace-by-path
                            root-children
                            (:path validated)
                            (:data validated))
