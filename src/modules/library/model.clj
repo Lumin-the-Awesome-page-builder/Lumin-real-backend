@@ -7,6 +7,7 @@
    ds
    {:select [:id :public :stars :name :created_at]
     :from [:project]
+    :order-by [:created_at :desc]
     :where [:= :owner_id user-id]}))
 
 (defn get-all-user-widgets
