@@ -1,8 +1,9 @@
 (ns modules.widget.service
   (:refer-clojure :exclude [remove])
   (:require [clojure.data.json :as json]
-            [modules.widget.model :refer [get-widget patch-widget create-widget set-tags get-tags remove-widget]]
-            [utils.validator :as validator]))
+            [modules.widget.model :refer [get-widget patch-widget patch-widget-preview create-widget set-tags get-tags remove-widget]]
+            [utils.validator :as validator]
+            [utils.file :as f]))
 
 (defn- has-access? [user-id widget]
   (when (not widget)
@@ -42,21 +43,41 @@
                           (assoc :tags tags))
                       {:status 400}))))
 
+(defn patch-preview
+  [ds authorized-id widget-id preview]
+  (let [widget (->> widget-id
+                    (get-widget ds)
+                    (has-access? authorized-id))
+        preview-file-name (str "Widget" (System/currentTimeMillis) (:id widget) ".png")]
+    (when (:preview widget)
+      (f/drop-file (:preview widget)))
+    (patch-widget-preview ds widget-id preview-file-name)
+    (f/save-base64-file preview preview-file-name)
+    preview-file-name))
+
 (def WidgetCreateSpec
   [:map
    [:name :string]
    [:data :string]
    [:category_id {:optional true} int?]
+   [:preview :string]
    [:tags {:optional true} [:sequential string?]]])
 
 (defn create
   [ds authorized-id widget-data]
+  (println widget-data)
+  (println WidgetCreateSpec)
   (let [validated (validator/validate WidgetCreateSpec widget-data)
         created (create-widget ds (assoc validated :owner_id authorized-id))
         tags (if (:tags validated)
                (map :tag (set-tags ds (:id created) (:tags validated)))
-               [])]
-    (json/write-str (assoc created :tags tags))))
+               [])
+        preview (if (:preview validated)
+                  (patch-preview ds authorized-id (:id created) (:preview validated))
+                  nil)]
+    (json/write-str (-> created
+                        (assoc :tags tags)
+                        (assoc :preview preview)))))
 
 (defn remove
   [ds authorized-id widget-id]

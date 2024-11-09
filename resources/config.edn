@@ -3,6 +3,7 @@
  :jwt-secret #include "jwt.edn"
  :database {:jdbcUrl "jdbc:postgresql://localhost:5432/lumin"
             :username "postgres"
-            :password #include "secrets.edn"}}
+            :password #include "secrets.edn"}
+ :file-path #include "file_path.edn"}
 
 
