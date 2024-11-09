@@ -1,8 +1,9 @@
 (ns modules.project.service
   (:refer-clojure :exclude [remove])
   (:require [clojure.data.json :as json]
-            [modules.project.model :refer [get-project patch-project create-project set-tags get-tags remove-project]]
-            [utils.validator :as validator]))
+            [modules.project.model :refer [get-project patch-project patch-project-preview create-project set-tags get-tags remove-project]]
+            [utils.validator :as validator]
+            [utils.file :as f]))
 
 (defn- has-access? [user-id project]
   (when (not project)
@@ -60,12 +61,15 @@
 
 (defn remove
   [ds authorized-id project-id]
-  (->> project-id
-       (get-project ds)
-       (has-access? authorized-id))
-  (let [remove-result (-> (remove-project ds project-id)
+  (let [project (->> project-id
+                     (get-project ds)
+                     (has-access? authorized-id))
+        remove-result (-> (remove-project ds project-id)
                           (:next.jdbc/update-count)
                           (> 0))]
+    (when (:preview project)
+      (f/drop-file (:preview project)))
+
     (json/write-str (if remove-result
                       {:status 200}
                       {:status 400}))))
@@ -105,3 +109,15 @@
                           (json/write-str))]
     (patch-project ds project-id (assoc project :data replaced-tree))
     replaced-tree))
+
+(defn patch-preview
+  [ds authorized-id project-id preview]
+  (let [project (->> project-id
+                     (get-project ds)
+                     (has-access? authorized-id))
+        preview-file-name (str "Project" (System/currentTimeMillis) (:id project) ".png")]
+    (when (:preview project)
+      (f/drop-file (:preview project)))
+    (patch-project-preview ds project-id preview-file-name)
+    (f/save-base64-file preview preview-file-name)
+    (json/write-str {:status 200})))

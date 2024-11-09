@@ -30,10 +30,10 @@
       nil)))
 
 (defn wrap-jwt-guard
-  [handler]
+  [handler excluded]
   (fn [request]
-    (if (= (-> request :request-method) :options)
-      (handler request)
+    (if (or (= (:request-method request) :options) (seq (filter #(re-matches % (:uri request)) excluded)))
+      (handler (assoc request :authorized {:sub 11}))
       (let [{:keys [headers]} request
             authorized (-> headers (extract-bearer) (unsign))]
         (if authorized
@@ -75,9 +75,11 @@
 (defn wrap-content-type-json
   [handler]
   (fn  [request]
-    (-> request
-        (handler)
-        (response/header "Content-Type" "application/json"))))
+    (let [response (handler request)]
+      (if (empty? (:headers response))
+        (-> response
+            (response/header "Content-Type" "application/json"))
+        response))))
 
 (defn wrap-not-found
   [handler]

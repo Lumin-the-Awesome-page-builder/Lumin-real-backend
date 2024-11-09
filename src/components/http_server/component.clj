@@ -20,7 +20,7 @@
     (let [server (jetty/run-jetty
                   (-> app-routes
                       (middlewares/wrap-exceptions-handling)
-                      (middlewares/wrap-jwt-guard)
+                      (middlewares/wrap-jwt-guard [#"\/lumin\/file\/.*"])
                       (middlewares/wrap-deps component)
                       (wrap-keyword-params)
                       (wrap-params)

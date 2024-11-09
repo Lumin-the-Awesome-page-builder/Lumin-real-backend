@@ -53,6 +53,14 @@
           :created_at (:created_at dto)}
     :where [:= :id id]}))
 
+(defn patch-project-preview
+  [ds id preview]
+  (database/execute-one!
+   ds
+   {:update [:project]
+    :set {:preview preview}
+    :where [:= :id id]}))
+
 (defn remove-project
   [ds id]
   (database/execute-one!
