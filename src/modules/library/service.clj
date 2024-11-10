@@ -11,3 +11,8 @@
   [ds authorized-id]
   (-> (library-model/get-all-user-widgets ds authorized-id)
       (json/write-str)))
+
+(defn get-all-categories
+  [ds]
+  (let [categories (library-model/get-all-categories ds)]
+    (json/write-str categories)))
