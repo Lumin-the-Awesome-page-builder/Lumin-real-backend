@@ -17,5 +17,4 @@
    (GET (prefixed "/categories") request
      (let [{:keys [datasource]} (:deps request)
            {:keys [sub]} (:authorized request)]
-       (response/response (get-all-categories datasource))))
-   ])
+       (response/response (get-all-categories datasource))))])

@@ -21,6 +21,6 @@
 (defn get-all-categories
   [ds]
   (database/execute!
-    ds
-    {:select [:id :name]
-     :from [:category]}))
+   ds
+   {:select [:id :name]
+    :from [:category]}))
