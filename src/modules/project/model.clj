@@ -5,9 +5,10 @@
   [ds id]
   (database/execute-one!
    ds
-   {:select :*
+   {:select [[:project.*] [:category.name :category_name]]
     :from [:project]
-    :where [:= :id id]}))
+    :join [[:category] [:= :project.category_id :category.id]]
+    :where [:= :project.id id]}))
 
 (defn create-project
   [ds dto]
