@@ -1,8 +1,11 @@
 (ns modules.project.service
   (:refer-clojure :exclude [remove])
   (:require [clojure.data.json :as json]
-            [modules.project.model :refer [get-project patch-project create-project set-tags get-tags remove-project]]
-            [utils.validator :as validator]))
+            [modules.project.model :refer [get-project patch-project patch-project-preview create-project set-tags get-tags remove-project]]
+            [utils.validator :as validator]
+            [utils.file :as f]
+            [utils.jwt :as jwt]
+            [components.config :refer [fetch-config]]))
 
 (defn- has-access? [user-id project]
   (when (not project)
@@ -23,7 +26,8 @@
    [:name {:optional true} :string]
    [:data {:optional true} :string]
    [:category_id {:optional true} int?]
-   [:tags {:optional true} [:sequential string?]]])
+   [:tags {:optional true} [:sequential string?]]
+   [:shared {:optional true} string?]])
 
 (defn patch
   [ds authorized-id project-id patch-data]
@@ -60,12 +64,59 @@
 
 (defn remove
   [ds authorized-id project-id]
-  (->> project-id
-       (get-project ds)
-       (has-access? authorized-id))
-  (let [remove-result (-> (remove-project ds project-id)
+  (let [project (->> project-id
+                     (get-project ds)
+                     (has-access? authorized-id))
+        remove-result (-> (remove-project ds project-id)
                           (:next.jdbc/update-count)
                           (> 0))]
+    (when (:preview project)
+      (f/drop-file (:preview project)))
+
     (json/write-str (if remove-result
                       {:status 200}
                       {:status 400}))))
+
+(defn patch-preview
+  [ds authorized-id project-id preview]
+  (let [project (->> project-id
+                     (get-project ds)
+                     (has-access? authorized-id))
+        preview-file-name (str "Project" (System/currentTimeMillis) (:id project) ".png")]
+    (when (:preview project)
+      (f/drop-file (:preview project)))
+    (patch-project-preview ds project-id preview-file-name)
+    (f/save-base64-file preview preview-file-name)
+    (json/write-str {:status 200})))
+
+(def CollaborationTokenSpec
+  [:map
+   :owner_id int?
+   :project_id int?
+   :key string?])
+
+(defn create-collaboration-link
+  [ds authorized-id project-id]
+  (let [project (->> project-id
+                     (get-project ds)
+                     (has-access? authorized-id))
+        shared (:shared project)]
+    (if (some? shared)
+      (if-let [token (jwt/sign {:owner_id authorized-id :project_id project-id :key shared} (:collaboration-token-expiring-time (fetch-config)))]
+        (json/write-str {:access-token token})
+        (throw (ex-info "Internal server error" {:errors "link generation failed"})))
+      (throw (ex-info "Bad request" {:errors "share project before link creation"})))))
+
+(def ShareProjectSpec
+  [:map
+   [:marketplace boolean?
+    :collaboration boolean?]])
+
+(defn share [ds authorized-id project-id share-dto]
+  (->> project-id
+       (get-project ds)
+       (has-access? authorized-id))
+  (let [{:keys [marketplace collaboration]} (validator/validate ShareProjectSpec share-dto)
+        collaboration (if collaboration (str (System/currentTimeMillis)) nil)]
+    (patch-project ds project-id {:shared collaboration :shared_marketplace marketplace}))
+  (json/write-str {:status 200}))

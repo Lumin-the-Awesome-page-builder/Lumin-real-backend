@@ -5,9 +5,10 @@
   [ds id]
   (database/execute-one!
    ds
-   {:select :*
+   {:select [[:project.*] [:category.name :category_name]]
     :from [:project]
-    :where [:= :id id]}))
+    :join [[:category] [:= :project.category_id :category.id]]
+    :where [:= :project.id id]}))
 
 (defn create-project
   [ds dto]
@@ -51,6 +52,14 @@
           :data (:data dto)
           :category_id (:category_id dto)
           :created_at (:created_at dto)}
+    :where [:= :id id]}))
+
+(defn patch-project-preview
+  [ds id preview]
+  (database/execute-one!
+   ds
+   {:update [:project]
+    :set {:preview preview}
     :where [:= :id id]}))
 
 (defn remove-project

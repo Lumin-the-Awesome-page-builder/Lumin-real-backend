@@ -2,6 +2,7 @@
   (:require [clojure.tools.logging :as log]
             [com.stuartsierra.component :as component]
             [core :refer [create-system]]))
+;[components.datasource :refer [datasource-component]]))
 
 (def system (atom (component/start-system (create-system))))
 (log/info "System started")

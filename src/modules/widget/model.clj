@@ -53,6 +53,14 @@
           :created_at (:created_at dto)}
     :where [:= :id widget-id]}))
 
+(defn patch-widget-preview
+  [ds id preview]
+  (database/execute-one!
+   ds
+   {:update [:widget]
+    :set {:preview preview}
+    :where [:= :id id]}))
+
 (defn remove-widget
   [ds widget-id]
   (database/execute-one!
