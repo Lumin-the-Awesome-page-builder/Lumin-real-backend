@@ -1,41 +1,25 @@
-(ns components.http-server.middleware
-  (:require [buddy.sign.jwt :as jwt]
-            [clojure.data.json :as json]
+(ns components.ring-server.middleware
+  (:require [clojure.data.json :as json]
             [clojure.tools.logging :as log]
-            [components.config :refer [fetch-config]]
-            [clojure.string :as str]
-            [ring.util.response :as response]))
+            [ring.util.response :as response]
+            [utils.jwt :refer [extract-bearer unsign]]))
 
 (defn wrap-deps
   [handler deps]
   (fn [request]
     (handler (assoc request :deps deps))))
 
-(defn- extract-bearer [headers]
-  (try
-    (-> headers
-        (get "authorization")
-        (str/split #"\s")
-        (second))
-    (catch Exception ex
-      (log/info "Bearer extracting failed due to: " ex)
-      nil)))
-
-(defn- unsign [token]
-  (try
-    (let [secret (-> (fetch-config) (:jwt-secret))]
-      (select-keys (jwt/unsign token secret) [:sub]))
-    (catch Exception ex
-      (log/info "Unsigning failed due to: " ex)
-      nil)))
+(defn wrap-deps-ws [deps]
+  (fn [next request]
+    (next (assoc request :deps deps))))
 
 (defn wrap-jwt-guard
   [handler excluded]
   (fn [request]
     (if (or (= (:request-method request) :options) (seq (filter #(re-matches % (:uri request)) excluded)))
-      (handler (assoc request :authorized {:sub 11}))
+      (handler (assoc request :authorized {:sub 1}))
       (let [{:keys [headers]} request
-            authorized (-> headers (extract-bearer) (unsign))]
+            authorized (-> headers (extract-bearer "authorization") (unsign))]
         (if authorized
           (do
             (log/info "Authorized user: " authorized)
@@ -65,7 +49,7 @@
     (try
       (handler request)
       (catch Exception ex
-        (log/error "Uncaught exception: " (.getMessage ex))
+        (log/error "Uncaught exception: " (.getMessage ex) ex)
         (let [ex (parse-ex ex)]
           (log/error "On return: " ex)
           (-> (response/response (json/write-str ex))

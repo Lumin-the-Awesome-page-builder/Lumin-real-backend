@@ -1,7 +1,0 @@
-FROM mariadb:latest
-
-ENV MARIADB_USER=user
-ENV MARIADB_PASSWORD=my_cool_secret
-ENV MARIADB_ROOT_PASSWORD=my-secret-pw
-
-WORKDIR /root
