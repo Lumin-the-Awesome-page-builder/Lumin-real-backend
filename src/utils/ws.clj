@@ -43,7 +43,7 @@
 (defn- message-handler [socket message routes middlewares]
   (let [parsed (parse-message message)
         request {:socket socket
-                 :message parsed
+                 :data parsed
                  :clients clients
                  :route (:route parsed)}]
     (if-let [handler (get routes (:route request))]

@@ -4,7 +4,7 @@
             [modules.file.controller :as file]
             [modules.widget.controller :as widget]
             [modules.project.controller :as project]
-            [modules.collab.controller :as collab]
+            [modules.editor.controller :as collab]
             [utils.ws :as ws]
             [components.ring-server.middleware :as middlewares]
             [ring.middleware.keyword-params :refer [wrap-keyword-params]]

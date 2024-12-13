@@ -3,7 +3,9 @@
   (:require [clojure.data.json :as json]
             [modules.project.model :refer [get-project patch-project patch-project-preview create-project set-tags get-tags remove-project]]
             [utils.validator :as validator]
-            [utils.file :as f]))
+            [utils.file :as f]
+            [utils.jwt :as jwt]
+            [components.config :refer [fetch-config]]))
 
 (defn- has-access? [user-id project]
   (when (not project)
@@ -24,7 +26,8 @@
    [:name {:optional true} :string]
    [:data {:optional true} :string]
    [:category_id {:optional true} int?]
-   [:tags {:optional true} [:sequential string?]]])
+   [:tags {:optional true} [:sequential string?]]
+   [:shared {:optional true} string?]])
 
 (defn patch
   [ds authorized-id project-id patch-data]
@@ -74,42 +77,6 @@
                       {:status 200}
                       {:status 400}))))
 
-(defn- place-by-path
-  [obj path on-replace]
-  (when (not obj)
-    (throw (ex-info "Bad request" {:error "Bad path provided"})))
-  (if (zero? (count path))
-    (let [key-on-replace (keyword (:key on-replace))]
-      (assoc obj key-on-replace on-replace))
-    (let [on-search (keyword (first path))
-          replaced (place-by-path (->> on-search
-                                       (get obj)
-                                       (:children)) (drop 1 path) on-replace)
-          replaced (assoc (get obj on-search) :children replaced)]
-      (assoc obj on-search replaced))))
-
-(def PatchProjectTreeSpec
-  [:map
-   [:path [:sequential string?]]
-   [:data :map]])
-
-(defn patch-tree
-  [ds authorized-id project-id patch-project-tree]
-  (let [validated (validator/validate PatchProjectTreeSpec patch-project-tree)
-        project (->> project-id
-                     (get-project ds)
-                     (has-access? authorized-id))
-        root-children (-> project
-                          (:data)
-                          (json/read-json))
-        replaced-tree (-> (place-by-path
-                           root-children
-                           (:path validated)
-                           (:data validated))
-                          (json/write-str))]
-    (patch-project ds project-id (assoc project :data replaced-tree))
-    replaced-tree))
-
 (defn patch-preview
   [ds authorized-id project-id preview]
   (let [project (->> project-id
@@ -121,3 +88,35 @@
     (patch-project-preview ds project-id preview-file-name)
     (f/save-base64-file preview preview-file-name)
     (json/write-str {:status 200})))
+
+(def CollaborationTokenSpec
+  [:map
+   :owner_id int?
+   :project_id int?
+   :key string?])
+
+(defn create-collaboration-link
+  [ds authorized-id project-id]
+  (let [project (->> project-id
+                     (get-project ds)
+                     (has-access? authorized-id))
+        shared (:shared project)]
+    (if (some? shared)
+      (if-let [token (jwt/sign {:owner_id authorized-id :project_id project-id :key shared} (:collaboration-token-expiring-time (fetch-config)))]
+        (json/write-str {:access-token token})
+        (throw (ex-info "Internal server error" {:errors "link generation failed"})))
+      (throw (ex-info "Bad request" {:errors "share project before link creation"})))))
+
+(def ShareProjectSpec
+  [:map
+   [:marketplace boolean?
+    :collaboration boolean?]])
+
+(defn share [ds authorized-id project-id share-dto]
+  (->> project-id
+       (get-project ds)
+       (has-access? authorized-id))
+  (let [{:keys [marketplace collaboration]} (validator/validate ShareProjectSpec share-dto)
+        collaboration (if collaboration (str (System/currentTimeMillis)) nil)]
+    (patch-project ds project-id {:shared collaboration :shared_marketplace marketplace}))
+  (json/write-str {:status 200}))

@@ -10,6 +10,11 @@
    :datasource
    (datasource-component)
 
+   :redis
+   (component/using
+    (create-redis)
+    [:datasource])
+
    :http-server-component
    (component/using
     (create-server)

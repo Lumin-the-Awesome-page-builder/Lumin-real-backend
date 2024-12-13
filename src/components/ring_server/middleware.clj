@@ -39,6 +39,7 @@
 
 (defn- parse-ex [ex]
   (case (.getMessage ex)
+    "Internal server error" (into {:status 500} (ex-data ex))
     "Bad request" (into {:status 400} (ex-data ex))
     "Not found" (into {:status 404} (ex-data ex))
     {:status 500 :error "Internal server error"}))
@@ -72,3 +73,9 @@
       (if (:status response)
         response
         {:status 404}))))
+
+(defn wrap-on [handler regex middleware & args]
+  (fn [request]
+    (if (seq (filter #(re-matches % (:uri request)) regex))
+      (apply middleware (concat [handler] args))
+      (handler request))))
