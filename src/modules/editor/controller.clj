@@ -1,6 +1,6 @@
 (ns modules.editor.controller
   (:require [ring.websocket :as ws]
-            [modules.editor.service :refer [start-collaboration edit patch-tree block-element release-element]]))
+            [modules.editor.service :refer [start-collaboration edit patch-tree block-element release-element save-project close-edit]]))
 
 (def ws-routes
   {"auth"
@@ -38,6 +38,18 @@
      (let [{:keys [data clients authorized]} request
            {:keys [redis]} (:deps request)]
        (release-element redis data (:sub authorized) clients)))
+
+   "save"
+   (fn [request]
+     (let [{:keys [data]} request
+           {:keys [redis datasource]} (:deps request)]
+       (save-project redis datasource data)))
+
+   "close"
+   (fn [request]
+     (let [{:keys [data authorized]} request
+           {:keys [redis datasource]} (:deps request)]
+       (close-edit redis datasource data (:sub authorized))))
 
    "ping-all"
    (fn [request]

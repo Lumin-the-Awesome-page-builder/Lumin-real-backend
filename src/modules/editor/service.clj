@@ -104,3 +104,25 @@
         path (redis/release-element rds (:project_id validated) (:index validated))]
     (notice-editors clients {:type "release" :data path} authorized-id)
     {:ok true}))
+
+(def ProjectIdSpec
+  [:map
+   :project_id int?
+   :access string?])
+
+(defn save-project [rds ds save-project-data]
+  (let [validated (validator/validate ProjectIdSpec save-project-data)
+        _ (validate-access rds (:access validated) (:project_id validated))]
+    (if (redis/project-in-edit? rds (:project_id validated))
+      (let [tree (redis/get-current-tree rds (:project-id validated))]
+        (pm/patch-project ds (:project_id validated) {:data tree})
+        {:ok true})
+      (throw (ex-info "bad project" {:errors "project isn`t active"})))))
+
+(defn close-edit [rds ds close-edit-data authorized-id]
+  (let [validated (validator/validate ProjectIdSpec close-edit-data)
+        _ (validate-access rds (:access validated) (:project_id validated))]
+    (redis/remove-editor rds (:project_id validated) authorized-id)
+    (when (not (redis/any-client-active? rds (:project_id validated)))
+      (save-project rds ds close-edit-data))
+    {:ok true}))

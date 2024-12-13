@@ -25,7 +25,13 @@
   (redis/exists rds (project-active-key project-id)))
 
 (defn add-editor [rds project-id user-id]
-  (redis/lpush rds (clients-key project-id) (str user-id)))
+  (redis/hset rds (clients-key project-id) (str user-id) "1"))
+
+(defn remove-editor [rds project-id user-id]
+  (redis/hdel rds (clients-key project-id) (str user-id)))
+
+(defn any-client-active? [rds project-id]
+  (-> (redis/hkeys rds (clients-key project-id)) not-empty some?))
 
 (defn activate [rds project-id tree-data user-id]
   (add-editor rds project-id user-id)
