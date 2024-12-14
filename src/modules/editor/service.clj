@@ -31,19 +31,31 @@
        :access (jwt/encrypt {:secret secret})})
     (throw (ex-info "Bad key" {:errors "bad key"}))))
 
-(defn- place-by-path
-  [obj path on-replace]
-  (when (not obj)
-    (throw (ex-info "Bad request" {:error "Bad path provided"})))
-  (if (zero? (count path))
-    (let [key-on-replace (keyword (:key on-replace))]
-      (assoc obj key-on-replace on-replace))
-    (let [on-search (keyword (first path))
-          replaced (place-by-path (->> on-search
-                                       (get obj)
-                                       (:children)) (drop 1 path) on-replace)
-          replaced (assoc (get obj on-search) :children replaced)]
-      (assoc obj on-search replaced))))
+(defn- change-by-path
+  "
+  [obj path] -> will remove element by specified path
+  [obj path on-replace] -> will replace element by specified item and path
+  "
+  ([obj path]
+   (change-by-path obj path (last path) true))
+
+  ([obj path on-replace]
+   (change-by-path obj path on-replace false))
+
+  ([obj path on-replace remove?]
+   (when (not obj)
+     (throw (ex-info "Bad request" {:error "Bad path provided"})))
+   (if (zero? (count path))
+     (let [key-on-replace (keyword (:key on-replace))]
+       (if remove?
+         (dissoc obj key-on-replace)
+         (assoc obj key-on-replace on-replace)))
+     (let [on-search (keyword (first path))
+           replaced (change-by-path (->> on-search
+                                         (get obj)
+                                         (:children)) (drop 1 path) on-replace)
+           replaced (assoc (get obj on-search) :children replaced)]
+       (assoc obj on-search replaced)))))
 
 (def PatchProjectTreeSpec
   [:map
@@ -69,10 +81,7 @@
         _ (validate-access rds (:access validated) (:project_id validated))
         project (redis/get-current-tree rds (:project-id validated))
         root-children (-> (json/read-json project))
-        replaced-tree (-> (place-by-path
-                           root-children
-                           (:path validated)
-                           (:data validated))
+        replaced-tree (-> (change-by-path root-children (:path validated) (:data validated))
                           (json/write-str))]
     (redis/patch-tree rds (:project-id validated) replaced-tree)
     (notice-editors clients {:type "patch" :data patch-project-tree} authorized-id)
@@ -125,4 +134,18 @@
     (redis/remove-editor rds (:project_id validated) authorized-id)
     (when (not (redis/any-client-active? rds (:project_id validated)))
       (save-project rds ds close-edit-data))
+    {:ok true}))
+
+(def RemoveElementSpec
+  [:map
+   [:project_id int?
+    :path [:sequential string?]
+    :access string?]])
+(defn remove-element [rds remove-element-data authorized-id clients]
+  (let [validated (validator/validate RemoveElementSpec remove-element-data)
+        _ (validate-access rds (:access validated) (:project_id validated))
+        tree-on-update (-> (redis/get-current-tree rds (:project_id validated))
+                           (change-by-path (:path validated)))]
+    (redis/patch-tree rds (:project-id validated) tree-on-update)
+    (notice-editors clients {:type "remove-element" :data (:path validated)} authorized-id)
     {:ok true}))
