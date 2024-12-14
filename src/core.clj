@@ -18,4 +18,4 @@
    :http-server-component
    (component/using
     (create-server)
-    [:datasource])))
+    [:datasource :redis])))

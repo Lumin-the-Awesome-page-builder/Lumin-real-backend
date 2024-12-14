@@ -3,7 +3,8 @@
   (:require [clojure.data.json :as json]
             [compojure.core :refer [GET PATCH POST DELETE]]
             [ring.util.response :as response]
-            [modules.project.service :refer [get-by-id hide-shared-secret patch patch-preview create remove create-collaboration-link share]]))
+            [modules.project.service :refer [get-by-id hide-shared-secret patch patch-preview create remove create-collaboration-link share]]
+            [modules.editor.service :refer [edit]]))
 
 (defn prefixed [url] (str "/lumin/project" url))
 
@@ -27,6 +28,13 @@
            {:keys [id]} (:params request)
            {:keys [sub]} (:authorized request)]
        (response/response (share datasource sub (parse-long id) (:params request)))))
+   (GET (prefixed "/:id/start-edit") request
+     (let [{:keys [datasource redis]} (:deps request)
+           params (:params request)
+           {:keys [sub]} (:authorized request)]
+       (->> (edit redis datasource sub (-> params :id parse-long) params)
+            (json/write-str)
+            (response/response))))
    (PATCH (prefixed "/:id") request
      (let [{:keys [datasource]} (:deps request)
            {:keys [id]} (:params request)
