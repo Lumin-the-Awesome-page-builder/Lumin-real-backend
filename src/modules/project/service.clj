@@ -1,7 +1,7 @@
 (ns modules.project.service
   (:refer-clojure :exclude [remove])
   (:require [clojure.data.json :as json]
-            [modules.project.model :refer [get-project patch-project patch-project-preview create-project set-tags get-tags remove-project]]
+            [modules.project.model :refer [get-project patch-project patch-project-preview create-project set-tags get-tags remove-project patch-share]]
             [utils.validator :as validator]
             [utils.file :as f]
             [utils.jwt :as jwt]
@@ -19,15 +19,18 @@
   (let [project (->> project-id
                      (get-project ds)
                      (has-access? authorized-id))]
-    (json/write-str (assoc project :tags (map :tag (get-tags ds project-id))))))
+    (assoc project :tags (map :tag (get-tags ds project-id)))))
+
+(defn hide-shared-secret
+  [project-data]
+  (assoc project-data :shared (some? (:shared project-data))))
 
 (def ProjectPatchSpec
   [:map
    [:name {:optional true} :string]
    [:data {:optional true} :string]
    [:category_id {:optional true} int?]
-   [:tags {:optional true} [:sequential string?]]
-   [:shared {:optional true} string?]])
+   [:tags {:optional true} [:sequential string?]]])
 
 (defn patch
   [ds authorized-id project-id patch-data]
@@ -91,9 +94,9 @@
 
 (def CollaborationTokenSpec
   [:map
-   :owner_id int?
-   :project_id int?
-   :key string?])
+   [:owner_id int?]
+   [:project_id int?]
+   [:key string?]])
 
 (defn create-collaboration-link
   [ds authorized-id project-id]
@@ -103,14 +106,14 @@
         shared (:shared project)]
     (if (some? shared)
       (if-let [token (jwt/sign {:owner_id authorized-id :project_id project-id :key shared} (:collaboration-token-expiring-time (fetch-config)))]
-        (json/write-str {:access-token token})
+        (json/write-str {:access_token token})
         (throw (ex-info "Internal server error" {:errors "link generation failed"})))
       (throw (ex-info "Bad request" {:errors "share project before link creation"})))))
 
 (def ShareProjectSpec
   [:map
-   [:marketplace boolean?
-    :collaboration boolean?]])
+   [:marketplace boolean?]
+   [:collaboration boolean?]])
 
 (defn share [ds authorized-id project-id share-dto]
   (->> project-id
@@ -118,5 +121,5 @@
        (has-access? authorized-id))
   (let [{:keys [marketplace collaboration]} (validator/validate ShareProjectSpec share-dto)
         collaboration (if collaboration (str (System/currentTimeMillis)) nil)]
-    (patch-project ds project-id {:shared collaboration :shared_marketplace marketplace}))
+    (patch-share ds project-id {:shared collaboration :shared_marketplace marketplace}))
   (json/write-str {:status 200}))
