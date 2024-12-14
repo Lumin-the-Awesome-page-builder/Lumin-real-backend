@@ -14,15 +14,16 @@
     (pm/get-project ds (:project_id data))
     false))
 
-(defn edit [rds ds authorized-id project-id]
-  (let [project (get-by-id ds project-id authorized-id)
-        tree (redis/start-edit rds project-id (:data project) authorized-id)
+(defn- start-edit [rds ds authorized-id project-id]
+  (let [project (get-by-id ds authorized-id project-id)
+        tree (json/write-str (:data project))
+        start-res (redis/start-edit rds project-id tree authorized-id)
         secret (redis/get-or-create-secret rds project-id)]
-    {:ok true
+    {:ok (= start-res "OK")
      :tree tree
-     :access (jwt/encrypt {:secret secret})}))
+     :access (jwt/encrypt (json/write-str {:secret secret}))}))
 
-(defn start-collaboration [rds ds authorized-id collaboration-key]
+(defn- start-collaboration [rds ds authorized-id collaboration-key]
   (if-let [project-data (collaboration-key-valid? ds collaboration-key)]
     (let [tree (redis/start-edit rds (:id project-data) (:data project-data) authorized-id)
           secret (redis/get-or-create-secret rds (:id project-data))]
@@ -30,6 +31,11 @@
        :tree tree
        :access (jwt/encrypt {:secret secret})})
     (throw (ex-info "Bad key" {:errors "bad key"}))))
+
+(defn edit [rds ds authorized-id project-id data]
+  (if (some? (:access data))
+    (start-collaboration rds ds authorized-id (:access data))
+    (start-edit rds ds authorized-id project-id)))
 
 (defn- change-by-path
   "

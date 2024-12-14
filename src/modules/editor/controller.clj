@@ -1,6 +1,6 @@
 (ns modules.editor.controller
   (:require [ring.websocket :as ws]
-            [modules.editor.service :refer [start-collaboration edit patch-tree block-element release-element save-project close-edit remove-element]]))
+            [modules.editor.service :refer [patch-tree block-element release-element save-project close-edit remove-element]]))
 
 (def ws-routes
   {"auth"
@@ -8,18 +8,6 @@
      (let [{:keys [clients socket]} request]
        (swap! clients assoc (str (-> request :authorized :sub) (System/currentTimeMillis)) socket)
        {:status 200 :data "authorized"}))
-
-   "edit"
-   (fn [request]
-     (let [{:keys [authorized data]} request
-           {:keys [redis datasource]} (:deps request)]
-       (edit redis datasource (:sub authorized) (:project_id data))))
-
-   "edit-by-key"
-   (fn [request]
-     (let [{:keys [authorized data]} request
-           {:keys [redis datasource]} (:deps request)]
-       (start-collaboration redis datasource (:sub authorized) (:key data))))
 
    "patch-tree"
    (fn [request]

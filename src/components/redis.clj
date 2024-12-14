@@ -8,9 +8,9 @@
   component/Lifecycle
 
   (start [component]
-    (let [redis (redis/init config)]
-      (log/info "Init reddis connection" redis)
-      (assoc component :redis redis)))
+    (let [rds (redis/init config)]
+      (log/info "Init reddis connection" rds)
+      (assoc component :redis rds)))
 
   (stop [component]
     (log/info "Stop redis server" (:redis component))

@@ -7,7 +7,8 @@
 (defn wrap-deps
   [handler deps]
   (fn [request]
-    (handler (assoc request :deps deps))))
+    (handler (->> (assoc deps :redis (-> deps :redis :redis))
+                  (assoc request :deps)))))
 
 (defn wrap-deps-ws [deps]
   (fn [next request]
