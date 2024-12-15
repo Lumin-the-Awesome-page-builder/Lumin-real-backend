@@ -13,8 +13,7 @@
      (let [{:keys [datasource]} (:deps request)
            {:keys [id]} (:params request)
            {:keys [sub]} (:authorized request)]
-       (->> (parse-long id)
-            (get-by-id datasource sub)
+       (->> (get-by-id datasource (parse-long id) sub)
             (hide-shared-secret)
             (json/write-str)
             (response/response))))
@@ -28,11 +27,11 @@
            {:keys [id]} (:params request)
            {:keys [sub]} (:authorized request)]
        (response/response (share datasource sub (parse-long id) (:params request)))))
-   (GET (prefixed "/:id/start-edit") request
+   (GET (prefixed "/:id-or-access/start-edit") request
      (let [{:keys [datasource redis]} (:deps request)
-           params (:params request)
+           {:keys [id-or-access]} (:params request)
            {:keys [sub]} (:authorized request)]
-       (->> (edit redis datasource sub (-> params :id parse-long) params)
+       (->> (edit redis datasource sub id-or-access)
             (json/write-str)
             (response/response))))
    (PATCH (prefixed "/:id") request

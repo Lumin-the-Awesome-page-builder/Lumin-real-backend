@@ -17,9 +17,7 @@
   (str project-id "_blocked"))
 
 (defn get-current-editors [rds project-id]
-  (if-let [len (redis/llen rds (clients-key project-id))]
-    (redis/lrange rds (clients-key project-id) 0 len)
-    []))
+  (redis/hvals rds (clients-key project-id)))
 
 (defn project-in-edit? [rds project-id]
   (redis/exists rds (project-active-key project-id)))
@@ -35,6 +33,7 @@
 
 (defn activate [rds project-id tree-data user-id]
   (add-editor rds project-id user-id)
+  (redis/set rds (project-active-key project-id) "active")
   (redis/set rds (tree-key project-id) tree-data))
 
 (defn get-current-tree [rds project-id]
