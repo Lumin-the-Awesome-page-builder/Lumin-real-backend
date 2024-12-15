@@ -4,6 +4,7 @@
  :database {:jdbcUrl "jdbc:postgresql://localhost:5432/lumin"
             :username "postgres"
             :password #include "secrets.edn"}
- :file-path #include "file_path.edn"}
+ :file-path #include "file_path.edn"
+ :docker-path #include "docker_path.edn"}
 
 
