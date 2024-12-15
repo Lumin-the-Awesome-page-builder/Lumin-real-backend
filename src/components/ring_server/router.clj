@@ -5,6 +5,7 @@
             [modules.widget.controller :as widget]
             [modules.project.controller :as project]
             [modules.editor.controller :as collab]
+            [modules.editor.service :as collab-service]
             [utils.ws :as ws]
             [components.ring-server.middleware :as middlewares]
             [ring.middleware.keyword-params :refer [wrap-keyword-params]]
@@ -29,8 +30,14 @@
                      (file/routes)
                      [(ws/create-ws-endpoint "/lumin/collab/ws" ;Endpoint
                                              collab/ws-routes ;Router
-                                             [(ws/wrap-jwt-auth auth-excluded) ;Middlewares
-                                              (middlewares/wrap-deps-ws component)])]))
+                                             [(ws/wrap-exception-handling)
+                                              (ws/wrap-jwt-auth auth-excluded) ;Middlewares
+                                              (middlewares/wrap-deps-ws component)]
+                                             (fn [clients args]
+                                               (collab-service/on-close clients
+                                                                        (-> component :redis :redis)
+                                                                        (-> component :datasource)
+                                                                        args)))]))
       (middlewares/wrap-exceptions-handling)
       (middlewares/wrap-jwt-guard auth-excluded)
       (middlewares/wrap-deps component)

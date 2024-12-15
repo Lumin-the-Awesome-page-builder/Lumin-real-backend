@@ -65,8 +65,6 @@
 
 (defn create
   [ds authorized-id widget-data]
-  (println widget-data)
-  (println WidgetCreateSpec)
   (let [validated (validator/validate WidgetCreateSpec widget-data)
         created (create-widget ds (assoc validated :owner_id authorized-id))
         tags (if (:tags validated)

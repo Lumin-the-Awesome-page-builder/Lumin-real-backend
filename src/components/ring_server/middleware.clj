@@ -12,7 +12,8 @@
 
 (defn wrap-deps-ws [deps]
   (fn [next request]
-    (next (assoc request :deps deps))))
+    (next (->> (assoc deps :redis (-> deps :redis :redis))
+               (assoc request :deps)))))
 
 (defn wrap-jwt-guard
   [handler excluded]
