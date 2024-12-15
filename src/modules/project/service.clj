@@ -15,11 +15,14 @@
     (throw (ex-info "Not found" {}))))
 
 (defn get-by-id
-  [ds authorized-id project-id]
-  (let [project (->> project-id
-                     (get-project ds)
-                     (has-access? authorized-id))]
-    (assoc project :tags (map :tag (get-tags ds project-id)))))
+  ([ds project-id]
+   (let [project (get-project ds project-id)]
+     (assoc project :tags (map :tag (get-tags ds project-id)))))
+  ([ds project-id authorized-id]
+   (let [project (->> project-id
+                      (get-project ds)
+                      (has-access? authorized-id))]
+     (assoc project :tags (map :tag (get-tags ds project-id))))))
 
 (defn hide-shared-secret
   [project-data]

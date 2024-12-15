@@ -1,6 +1,6 @@
 (ns modules.editor.controller
   (:require [ring.websocket :as ws]
-            [modules.editor.service :refer [patch-tree block-element release-element save-project close-edit remove-element]]))
+            [modules.editor.service :refer [patch-tree update-prop block-element release-element save-project close-edit remove-element]]))
 
 (def ws-routes
   {"auth"
@@ -14,6 +14,12 @@
      (let [{:keys [data clients authorized]} request
            {:keys [redis]} (:deps request)]
        (patch-tree redis (:patch-data data) (:sub authorized) clients)))
+
+   "patch-prop"
+   (fn [request]
+     (let [{:keys [data clients authorized]} request
+           {:keys [redis]} (:deps request)]
+       (update-prop redis (:patch-data data) (:sub authorized) clients)))
 
    "block-element"
    (fn [request]
