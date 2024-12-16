@@ -26,7 +26,7 @@
    (fn [request]
      (let [{:keys [data clients authorized]} request
            {:keys [redis]} (:deps request)]
-       (patch-item-ordering redis data (:dub authorized) clients)))
+       (patch-item-ordering redis data (:sub authorized) clients)))
 
    "remove-element"
    (fn [request]
