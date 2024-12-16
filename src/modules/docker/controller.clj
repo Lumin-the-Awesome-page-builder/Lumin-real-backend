@@ -2,67 +2,60 @@
   (:require [compojure.core :refer [GET POST]]
             [ring.util.response :as response]
             [modules.docker.service :refer [start-all stop-all down-all get-containers stop-service down-service
-                                            start-service update-compose get-compose get-service-log]]))
+                                            start-service update-compose get-compose get-service-log generate-docker-directory]]))
 
 (defn prefixed [url] (str "/lumin/docker" url))
 
 (defn routes []
-  [(GET (prefixed "/:id/start/all") request
-     (let [{:keys [datasource]} (:deps request)
-           {:keys [id]} (:params request)
+  [(POST (prefixed "/environment") request
+     (let [{:keys [sub]} (:authorized request)]
+       (response/response (generate-docker-directory sub (:params request)))))
+   (GET (prefixed "/:environment-name/start/all") request
+     (let [{:keys [environment-name]} (:params request)
            {:keys [sub]} (:authorized request)]
-       (response/response (start-all datasource sub (parse-long id)))))
+       (response/response (start-all sub environment-name))))
 
-   (GET (prefixed "/:id/down/all") request
-     (let [{:keys [datasource]} (:deps request)
-           {:keys [id]} (:params request)
+   (GET (prefixed "/:environment-name/down/all") request
+     (let [{:keys [environment-name]} (:params request)
            {:keys [sub]} (:authorized request)]
-       (response/response (down-all datasource sub (parse-long id)))))
+       (response/response (down-all sub environment-name))))
 
-   (GET (prefixed "/:id/stop/all") request
-     (let [{:keys [datasource]} (:deps request)
-           {:keys [id]} (:params request)
+   (GET (prefixed "/:environment-name/stop/all") request
+     (let [{:keys [environment-name]} (:params request)
            {:keys [sub]} (:authorized request)]
-       (response/response (stop-all datasource sub (parse-long id)))))
+       (response/response (stop-all sub environment-name))))
 
-   (GET (prefixed "/:id/containers") request
-     (let [{:keys [datasource]} (:deps request)
-           {:keys [id]} (:params request)
+   (GET (prefixed "/:environment-name/containers") request
+     (let [{:keys [environment-name]} (:params request)
            {:keys [sub]} (:authorized request)]
-       (response/response (get-containers datasource sub (parse-long id)))))
+       (response/response (get-containers sub environment-name))))
 
-   (POST (prefixed "/:id/service/stop") request
-     (let [{:keys [datasource]} (:deps request)
-           {:keys [id]} (:params request)
+   (POST (prefixed "/:environment-name/service/stop") request
+     (let [{:keys [environment-name]} (:params request)
            {:keys [sub]} (:authorized request)]
-       (response/response (stop-service datasource sub (parse-long id) (:params request)))))
+       (response/response (stop-service sub environment-name (:params request)))))
 
-   (POST (prefixed "/:id/service/start") request
-     (let [{:keys [datasource]} (:deps request)
-           {:keys [id]} (:params request)
+   (POST (prefixed "/:environment-name/service/start") request
+     (let [{:keys [environment-name]} (:params request)
            {:keys [sub]} (:authorized request)]
-       (response/response (start-service datasource sub (parse-long id) (:params request)))))
+       (response/response (start-service sub environment-name (:params request)))))
 
-   (POST (prefixed "/:id/service/down") request
-     (let [{:keys [datasource]} (:deps request)
-           {:keys [id]} (:params request)
+   (POST (prefixed "/:environment-name/service/down") request
+     (let [{:keys [environment-name]} (:params request)
            {:keys [sub]} (:authorized request)]
-       (response/response (down-service datasource sub (parse-long id) (:params request)))))
+       (response/response (down-service sub environment-name (:params request)))))
 
-   (GET (prefixed "/:id/service/logs") request
-     (let [{:keys [datasource]} (:deps request)
-           {:keys [id]} (:params request)
+   (GET (prefixed "/:environment-name/service/logs") request
+     (let [{:keys [environment-name]} (:params request)
            {:keys [sub]} (:authorized request)]
-       (response/response (get-service-log datasource sub (parse-long id) (:params request)))))
+       (response/response (get-service-log sub environment-name (:params request)))))
 
-   (POST (prefixed "/:id/compose") request
-     (let [{:keys [datasource]} (:deps request)
-           {:keys [id]} (:params request)
+   (POST (prefixed "/:environment-name/compose") request
+     (let [{:keys [environment-name]} (:params request)
            {:keys [sub]} (:authorized request)]
-       (response/response (update-compose datasource sub (parse-long id) (:params request)))))
+       (response/response (update-compose sub environment-name (:params request)))))
 
-   (GET (prefixed "/:id/compose") request
-     (let [{:keys [datasource]} (:deps request)
-           {:keys [id]} (:params request)
+   (GET (prefixed "/:environment-name/compose") request
+     (let [{:keys [environment-name]} (:params request)
            {:keys [sub]} (:authorized request)]
-       (response/response (get-compose datasource sub (parse-long id)))))])
+       (response/response (get-compose sub environment-name))))])
