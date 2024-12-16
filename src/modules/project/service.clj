@@ -2,6 +2,7 @@
   (:refer-clojure :exclude [remove])
   (:require [clojure.data.json :as json]
             [modules.project.model :refer [get-project patch-project patch-project-preview create-project set-tags get-tags remove-project patch-share]]
+            [modules.docker.service :refer [generate-docker-directory]]
             [utils.validator :as validator]
             [utils.file :as f]
             [utils.jwt :as jwt]
@@ -65,7 +66,9 @@
         created (create-project ds (assoc validated :owner_id authorized-id))
         tags (if (:tags validated)
                (map :tag (set-tags ds (:id created) (:tags validated)))
-               [])]
+               [])
+        project-id (:id created)]
+    (generate-docker-directory project-id)
     (json/write-str (assoc created :tags tags))))
 
 (defn remove
