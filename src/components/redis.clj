@@ -9,7 +9,7 @@
 
   (start [component]
     (let [rds (redis/init config)]
-      (log/info "Init reddis connection" rds)
+      (log/info "Init reddis connection, (config " config ") " rds)
       (assoc component :redis rds)))
 
   (stop [component]
@@ -20,4 +20,4 @@
     (assoc component :redis nil)))
 
 (defn create-redis []
-  (map->RedisComponent (:redis (fetch-config))))
+  (map->RedisComponent {:config (:redis (fetch-config))}))
