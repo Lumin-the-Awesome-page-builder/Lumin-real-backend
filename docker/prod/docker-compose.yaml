@@ -1,54 +1,34 @@
 networks:
-  iternal:
-    name: iternal
-  exposed:
-    name: exposed
+  iternal-lumin:
+    name: iternal-lumin
+  exposed-lumin:
+    name: exposed-lumin
 services:
-  jvm:
-    build: ./jvm
+  back:
+    image: eclipse-temurin:latest
     volumes:
-      - ./jvm/dist:/opt/application
       - ./jvm/home:/home
     networks:
-      - iternal
-      - exposed
+      - iternal-lumin
+      - exposed-lumin
+    ports:
+      - 8090:8080
     depends_on:
-      - maria
       - postgres
-#    Here u can set RAM and CPU limits for the container
-#    deploy:
-#      resources:
-#        limits:
-#          cpus: '1.5'
-#          memory: 7168M #7GB
     restart: always
     entrypoint: /bin/bash /home/startup.sh
   nginx:
     build: ./nginx
     ports:
       - "80:80"
-      - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
       - ./nginx/home:/home
     networks:
-      - exposed
+      - exposed-lumin
     depends_on:
-      - jvm
+      - back
     entrypoint: /bin/bash /home/startup.sh
-  maria:
-    build: ./mariadb
-    volumes:
-      - ./mariadb/home:/home
-      - ./mariadb/start_dump:/docker-entrypoint-initdb.d
-    networks:
-      - iternal
-#    Here u can set RAM and CPU limits for the container
-#    deploy:
-#      resources:
-#        limits:
-#          cpus: '1.5'
-#          memory: 7168M #7GB
   prometheus:
     image: prom/prometheus
     restart: always
@@ -56,21 +36,24 @@ services:
       - ./prometheus:/etc/prometheus/
       - ./prometheus/home:/home
     networks:
-      - iternal
+      - iternal-lumin
+    ports:
+      - 9090:9090
   grafana:
     image: grafana/grafana:latest
-#    You can exposed ports if you need or proxy it through nginx
-#    ports:
-#      - 3000:XXXX
+    ports:
+      - 3000:3000
     volumes:
       - ./grafana/data:/var/lib/grafana
     networks:
-      - iternal
+      - iternal-lumin
     depends_on:
       - prometheus
   postgres:
     build: ./postgres
     restart: always
+    ports:
+      - 5432:5432
     environment:
       POSTGRES_PASSWORD: my-secret-pw
     volumes:
@@ -78,12 +61,4 @@ services:
       - ./postgres/root:/root
       - ./postgres/init.d:/docker-entrypoint-initdb.d
     networks:
-      - iternal
-    ports:
-      - "5432:5432"
-#    Here u can set RAM and CPU limits for the container
-#    deploy:
-#      resources:
-#        limits:
-#          cpus: '1.5'
-#          memory: 7168M #7G
+      - iternal-lumin

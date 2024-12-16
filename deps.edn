@@ -14,6 +14,7 @@
 
         ring/ring-core {:mvn/version "1.13.0"}
         ring/ring-jetty-adapter {:mvn/version "1.13.0"}
+        info.sunng/ring-jetty9-adapter {:mvn/version "0.36.0"}
 
         compojure/compojure {:mvn/version "1.7.1"}
 
@@ -27,7 +28,10 @@
         com.github.seancorfield/honeysql {:mvn/version "2.6.1203"}
         nilenso/honeysql-postgres {:mvn/version "0.4.112"}
         org.flywaydb/flyway-core {:mvn/version "10.20.1"}
-        org.flywaydb/flyway-database-postgresql {:mvn/version "10.20.1"}}
+        org.flywaydb/flyway-database-postgresql {:mvn/version "10.20.1"}
+        clj-redis/clj-redis {:mvn/version "0.0.12"}
+
+        iapetos/iapetos {:mvn/version "0.1.6"}}
 
  :aliases {:test {:extra-paths ["test"]
                   :extra-deps {io.github.cognitect-labs/test-runner
