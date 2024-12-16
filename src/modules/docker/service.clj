@@ -182,6 +182,6 @@
         validated (validator/validate LogSizeSpec log-size)]
     (if validated
       (if (check-directory-existence (.getAbsolutePath project-dir))
-        (run-docker-command (str  "logs --tail=" (:size validated) (:name validated)) (.getAbsolutePath project-dir))
+        (run-docker-command (str  "logs --tail=" (:size validated) " " (:name validated)) (.getAbsolutePath project-dir))
         (throw (ex-info "Bad request" {:error "Directory not found"})))
       (throw (ex-info "Bad request" {:error "Invalid data provided"})))))
