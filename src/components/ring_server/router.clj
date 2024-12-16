@@ -20,7 +20,7 @@
       (prometheus-ring/initialize)))
 
 (def auth-excluded
-  [#"\/lumin\/file\/.*" #"\/lumin\/metrics"])
+  [#"\/lumin\/file\/.*" #"\/lumin\/metrics" #"\/lumin\/collab\/ws"])
 
 (defn app-routes [component]
   (-> routes
