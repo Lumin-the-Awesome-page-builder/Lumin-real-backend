@@ -304,9 +304,9 @@
 
 (def RemoveElementSpec
   [:map
-   [:project_id int?
-    :path [:sequential string?]
-    :access string?]])
+   [:project_id int?]
+   [:path [:sequential string?]]
+   [:access string?]])
 (defn remove-element [rds remove-element-data authorized-id clients]
   (let [validated (validator/validate RemoveElementSpec remove-element-data)
         _ (validate-access rds (:access validated) (:project_id validated))
