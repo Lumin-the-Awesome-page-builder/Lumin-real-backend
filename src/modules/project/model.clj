@@ -7,7 +7,7 @@
    ds
    {:select [[:project.*] [:category.name :category_name]]
     :from [:project]
-    :join [[:category] [:= :project.category_id :category.id]]
+    :left-join [[:category] [:= :project.category_id :category.id]]
     :where [:= :project.id id]}))
 
 (defn create-project
@@ -52,6 +52,23 @@
           :data (:data dto)
           :category_id (:category_id dto)
           :created_at (:created_at dto)}
+    :where [:= :id id]}))
+
+(defn patch-tree
+  [ds id tree]
+  (database/execute-one!
+   ds
+   {:update [:project]
+    :set {:data tree}
+    :where [:= :id id]}))
+
+(defn patch-share
+  [ds id dto]
+  (database/execute-one!
+   ds
+   {:update [:project]
+    :set {:shared_marketplace (:shared_marketplace dto)
+          :shared (:shared dto)}
     :where [:= :id id]}))
 
 (defn patch-project-preview

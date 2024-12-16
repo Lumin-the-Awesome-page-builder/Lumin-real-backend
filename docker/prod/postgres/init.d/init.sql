@@ -1,1 +1,1 @@
-create extension plpython3u;
+create database lumin;

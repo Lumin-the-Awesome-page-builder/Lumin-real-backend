@@ -1,2 +1,4 @@
 /secrets.edn
 /jwt.edn
+/jws.edn
+/file_path.edn
