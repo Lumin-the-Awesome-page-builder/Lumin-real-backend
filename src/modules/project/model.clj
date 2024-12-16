@@ -54,6 +54,14 @@
           :created_at (:created_at dto)}
     :where [:= :id id]}))
 
+(defn patch-tree
+  [ds id tree]
+  (database/execute-one!
+   ds
+   {:update [:project]
+    :set {:data tree}
+    :where [:= :id id]}))
+
 (defn patch-share
   [ds id dto]
   (database/execute-one!

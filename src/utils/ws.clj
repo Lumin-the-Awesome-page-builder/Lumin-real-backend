@@ -15,8 +15,14 @@
       {:route ""}
       parsed)))
 
-(defn- response [status data]
-  {:status status :data data})
+(defn- response
+  ([status data]
+   {:status status :data data})
+
+  ([status data awaited awaited_type]
+   (if awaited
+     (assoc (response status data) :awaited_type awaited_type)
+     (response status data))))
 
 (defn wrap-jwt-auth [excluded]
   (fn [next request]
@@ -26,8 +32,13 @@
         (next (assoc request :authorized authorized))
         (response 403 :nil)))))
 
-(defn- on-close [socket _ reason]
-  (log/info (str "Socket " socket " was closed due to " reason)))
+(defn wrap-exception-handling []
+  (fn [next request]
+    (try
+      (next request)
+      (catch Exception ex
+        (log/info ex)
+        (response 500 (.getMessage ex))))))
 
 (defn- apply-middlewares [middlewares handler request]
   (if (zero? (count middlewares))
@@ -43,19 +54,25 @@
 (defn- message-handler [socket message routes middlewares]
   (let [parsed (parse-message message)
         request {:socket socket
-                 :data parsed
+                 :headers (:headers parsed)
+                 :data (:data parsed)
                  :clients clients
-                 :route (:route parsed)}]
+                 :route (:route parsed)}
+        awaited? (-> request :headers :awaited)
+        awaited_type (-> request :headers :awaited_type)]
     (if-let [handler (get routes (:route request))]
-      (->> request
-           (apply-middlewares middlewares handler)
-           (json/write-str)
-           (ws/send socket))
-      (->> (response 404 :nil)
+      (let [response (->> request
+                          (apply-middlewares middlewares handler))]
+        (->> (if awaited?
+               (assoc response :awaited_type awaited_type)
+               response)
+             (json/write-str)
+             (ws/send socket)))
+      (->> (response 404 :nil awaited? awaited_type)
            (json/write-str)
            (ws/send socket)))))
 
-(defn create-ws-endpoint [route routes middlewares]
+(defn create-ws-endpoint [route routes middlewares on-close]
   (GET route request
     (when (ws/upgrade-request? request)
       {::ws/listener
@@ -65,4 +82,4 @@
         :on-message
         (fn [socket message]
           (message-handler socket message routes middlewares))
-        :on-close (fn [& args] (apply on-close args))}})))
+        :on-close (fn [& args] (on-close clients args))}})))

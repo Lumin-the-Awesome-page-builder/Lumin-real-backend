@@ -1,6 +1,7 @@
 (ns utils.jwt
   (:require [buddy.sign.jwt :as jwt]
             [buddy.sign.jws :as jws]
+            [clojure.data.json :as json]
             [clojure.string :as str]
             [clojure.tools.logging :as log]
             [components.config :refer [fetch-config]]))
@@ -41,5 +42,8 @@
   (let [encrypted (jws/sign data secret)]
     encrypted))
 
-(defn validate [secret]
-  (jws/unsign secret (-> (fetch-config) :jwt-secret)))
+(defn validate [hash secret]
+  (-> hash
+      (jws/unsign secret)
+      slurp
+      (json/read-json)))
