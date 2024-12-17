@@ -84,7 +84,7 @@
   [ds]
   (database/execute!
     ds
-    {:select [:configuration.id, :configuration.name]
+    {:select [:id, :name, :mapping]
      :from [:configuration]}))
 
 (defn get-configuration
