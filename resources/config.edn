@@ -8,6 +8,7 @@
             :username "postgres"
             :password #include "secrets.edn"}
  :file-path #include "file_path.edn"
- :redis {:url "redis://localhost:6379"}}
+ :redis {:url "redis://localhost:6379"}
+ :docker-path #include "docker_path.edn"}
 
 

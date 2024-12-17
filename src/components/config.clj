@@ -7,4 +7,5 @@
                {:resolver {"jwt.edn" (clojure.java.io/resource "jwt.edn")
                            "jws.edn" (clojure.java.io/resource "jws.edn")
                            "secrets.edn" (clojure.java.io/resource "secrets.edn")
-                           "file_path.edn" (clojure.java.io/resource "file_path.edn")}}))
+                           "file_path.edn" (clojure.java.io/resource "file_path.edn")
+                           "docker_path.edn" (clojure.java.io/resource "docker_path.edn")}}))

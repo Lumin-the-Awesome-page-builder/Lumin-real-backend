@@ -1,5 +1,6 @@
 (ns components.ring-server.router
   (:require [compojure.core :refer [routes]]
+            [modules.docker.controller :as docker]
             [modules.library.controller :as library]
             [modules.file.controller :as file]
             [modules.widget.controller :as widget]
@@ -28,6 +29,7 @@
                      (project/routes)
                      (widget/routes)
                      (file/routes)
+                     (docker/routes)
                      [(ws/create-ws-endpoint "/lumin/collab/ws" ;Endpoint
                                              collab/ws-routes ;Router
                                              [(ws/wrap-exception-handling)
