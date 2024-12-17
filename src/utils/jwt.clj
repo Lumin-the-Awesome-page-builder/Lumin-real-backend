@@ -21,6 +21,7 @@
   ([token keys]
    (try
      (let [secret (-> (fetch-config) :jwt-secret)]
+       (log/info token secret)
        (select-keys (jwt/unsign token secret) keys))
      (catch Exception ex
        (log/info "Unsigning failed due to: " ex)
