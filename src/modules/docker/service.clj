@@ -29,9 +29,9 @@
   (let [{:keys [out exit]} (sh "docker-compose" "ps" "--format" "{{.Names}} {{.Status}}" :dir dir)]
     (if (= exit 0)
       (json/write-str
-        (map #(let [[name & status] (str/split % #" " 2)]
-                {:name name, :status (str/join " " status)})
-             (str/split-lines out)))
+       (map #(let [[name & status] (str/split % #" " 2)]
+               {:name name, :status (str/join " " status)})
+            (str/split-lines out)))
       (throw (ex-info "Error executing docker command" {:error "Not found"})))))
 
 (defn generate-docker-directory

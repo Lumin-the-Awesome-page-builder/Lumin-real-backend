@@ -50,17 +50,17 @@
                       {:environment-name name :message "This name already is used"}))
       (if hidden
         (database/execute-one!
-          ds
-          {:insert-into [:environment]
-           :columns [:name :owner_id :path :created_at :hidden]
-           :values [[name user-id path (System/currentTimeMillis) hidden]]
-           :returning [:id :name]})
+         ds
+         {:insert-into [:environment]
+          :columns [:name :owner_id :path :created_at :hidden]
+          :values [[name user-id path (System/currentTimeMillis) hidden]]
+          :returning [:id :name]})
         (database/execute-one!
-          ds
-          {:insert-into [:environment]
-           :columns [:name :owner_id :path :created_at :hidden]
-           :values [[name user-id path (System/currentTimeMillis) false]]
-           :returning [:id :name]})))))
+         ds
+         {:insert-into [:environment]
+          :columns [:name :owner_id :path :created_at :hidden]
+          :values [[name user-id path (System/currentTimeMillis) false]]
+          :returning [:id :name]})))))
 
 (defn insert-or-update-container
   [ds name status environment-id]
@@ -83,14 +83,14 @@
 (defn get-all-configurations
   [ds]
   (database/execute!
-    ds
-    {:select [:id, :name, :mapping]
-     :from [:configuration]}))
+   ds
+   {:select [:id, :name, :mapping]
+    :from [:configuration]}))
 
 (defn get-configuration
   [ds configuration-id]
   (database/execute-one!
-    ds
-    {:select [:id, :name, :mapping]
+   ds
+   {:select [:id, :name, :mapping]
     :from [:configuration]
     :where [:= :id configuration-id]}))
