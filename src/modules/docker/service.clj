@@ -4,6 +4,8 @@
             [components.config :refer [fetch-config]]
             [clojure.java.shell :refer [sh]]
             [clojure.data.json :as json]
+            [modules.docker.model :refer [get-environment-by-id create-environment get-container-by-id
+                                          insert-or-update-container get-all-user-environment]]
             [utils.validator :as validator])
   (:import (java.io BufferedReader)))
 
@@ -21,22 +23,44 @@
 (def ContainerCreateSpec [:map
                           [:name :string]])
 
+(defn has-access-env?
+  [ds authorised-id environment-id]
+  (let [env (first (get-environment-by-id ds environment-id))]
+    (when (not env)
+      (throw (ex-info "Not found" {:errors "Environment not found"})))
+    (if (= (str (:owner_id env)) (str authorised-id))
+      env
+      (throw (ex-info "Not found" {})))))
+
+(defn list-containers [dir]
+  (let [{:keys [out exit]} (sh "docker-compose" "ps" "--format" "{{.Names}} {{.Status}}" :dir dir)]
+    (if (= exit 0)
+      (json/write-str
+        (map #(let [[name & status] (str/split % #" " 2)]
+                {:name name, :status (str/join " " status)})
+             (str/split-lines out)))
+      (throw (ex-info "Error executing docker command" {:error "Not found"})))))
+
 (defn generate-docker-directory
-  [authorised-id directory-name]
+  [ds authorised-id directory-name]
   (let [docker-path (-> (fetch-config) :docker-path)
         validated (validator/validate ContainerCreateSpec directory-name)
-        project-dir (io/file docker-path (str (str authorised-id) "/" (:name validated)))]
+        path (str (str authorised-id) "/" (:name validated) "-" (str authorised-id))
+        project-dir (io/file docker-path path)]
     (if (.exists project-dir)
       (throw (ex-info "Bad request"
-                      {:project-name (:name validated) :message "This name already is used"}))
+                      {:environment-name (:name validated) :message "This name already is used"}))
       (do
         (.mkdirs project-dir)
-        (spit (io/file project-dir "docker-compose.yml") "# Docker Compose configuration")))))
+        (spit (io/file project-dir "docker-compose.yml") "# Docker Compose configuration")
+        (json/write-str (create-environment ds authorised-id (:name validated) path))
+        ))))
 
 (defn run-docker-command
-  [command project-dir]
-  (let [cmd (str "docker compose " command)
+  [type command project-dir]
+  (let [cmd (str "docker " type " " command)
         result (sh "sh" "-c" cmd :dir project-dir)]
+    (println cmd result)
     (if (zero? (:exit result))
       (json/write-str {:status "success" :stdout (:out result) :stderr (:err result)})
       (throw (ex-info "Docker command failed"
@@ -46,77 +70,88 @@
                        :exit-code (:exit result)})))))
 
 (defn start-all
-  [authorised-id environment-name]
-  (let [docker-path (-> (fetch-config) :docker-path)
+  [ds authorised-id environment-id]
+  (let [env (has-access-env? ds authorised-id environment-id)
+        docker-path (-> (fetch-config) :docker-path)
         script-path (str docker-path "/check_containers.sh")
-        project-dir (io/file docker-path (str (str authorised-id) "/" (str environment-name)))]
+        project-dir (io/file docker-path (str (:path env)))]
     (if (check-directory-existence (.getAbsolutePath project-dir))
       (let [result (sh "sh" script-path (.getAbsolutePath project-dir))]
         (if (zero? (:exit result))
-          (json/write-str {:status "success"
-                           :message (:logs result)})
+          (let [json-list (list-containers (.getAbsolutePath project-dir))
+                containers (json/read-str json-list :key-fn keyword)]
+            (let [updated-containers
+                  (map (fn [container]
+                         (let [con (first (insert-or-update-container ds (:name container) (:status container) environment-id))]
+                           (assoc container :id (:id con))))
+                       containers)]
+              (json/write-str updated-containers)))
           (json/write-str {:status "error"
-                           :message (:logs result)})))
+                           :message (:out result)})))
       (throw (ex-info "Bad request" {:error "Directory not found"})))))
 
 (defn stop-all
-  [authorised-id environment-name]
-  (let [docker-path (-> (fetch-config) :docker-path)
-        project-dir (io/file docker-path (str (str authorised-id) "/" (str environment-name)))]
+  [ds authorised-id environment-id]
+  (let [env (has-access-env? ds authorised-id environment-id)
+        docker-path (-> (fetch-config) :docker-path)
+        project-dir (io/file docker-path (str (:path env)))]
     (if (check-directory-existence (.getAbsolutePath project-dir))
-      (run-docker-command "stop" (.getAbsolutePath project-dir))
+      (run-docker-command  "compose" "stop" (.getAbsolutePath project-dir))
       (throw (ex-info "Bad request" {:error "Project not found"})))))
 
 (defn down-all
-  [authorised-id environment-name]
-  (let [docker-path (-> (fetch-config) :docker-path)
-        project-dir (io/file docker-path (str (str authorised-id) "/" (str environment-name)))]
+  [ds authorised-id environment-id]
+  (let [env (has-access-env? ds authorised-id environment-id)
+        docker-path (-> (fetch-config) :docker-path)
+        project-dir (io/file docker-path (str (:path env)))]
     (if (check-directory-existence (.getAbsolutePath project-dir))
-      (run-docker-command "down" (.getAbsolutePath project-dir))
+      (run-docker-command "compose" "down" (.getAbsolutePath project-dir))
       (throw (ex-info "Bad request" {:error "Project not found"})))))
 
-(defn list-containers [dir]
-  (let [{:keys [out exit]} (sh "docker-compose" "ps" "--format" "{{.Names}} {{.Status}}" :dir dir)]
-    (if (= exit 0)
-      (json/write-str
-       (map #(let [[name & status] (str/split % #" " 2)]
-               {:name name, :status (str/join " " status)})
-            (str/split-lines out)))
-      (throw (ex-info "Error executing docker command" {:error "Not found"})))))
-
 (defn get-containers
-  [authorised-id environment-name]
-  (let [docker-path (-> (fetch-config) :docker-path)
-        project-dir (io/file docker-path (str (str authorised-id) "/" (str environment-name)))]
+  [ds authorised-id environment-id]
+  (let [env (has-access-env? ds authorised-id environment-id)
+        docker-path (-> (fetch-config) :docker-path)
+        project-dir (io/file docker-path (str (:path env)))]
     (if (check-directory-existence (.getAbsolutePath project-dir))
-      (list-containers (.getAbsolutePath project-dir))
+      (let [json-list (list-containers (.getAbsolutePath project-dir))
+            containers (json/read-str json-list :key-fn keyword)]
+        (let [updated-containers
+              (map (fn [container]
+                     (let [result (first (insert-or-update-container ds (:name container) (:status container) environment-id))]
+                       (assoc container :id (:id result))))
+                   containers)]
+          (json/write-str updated-containers)))
       (throw (ex-info "Bad request" {:error "Not found"})))))
 
-(def ContainerSearchSpec [:map
-                          [:name :string]])
-
-(defn handle-service
-  [authorised-id environment-name service-name command]
+(defn handle-container
+  [path container-name command]
   (let [docker-path (-> (fetch-config) :docker-path)
-        project-dir (io/file docker-path (str (str authorised-id) "/" (str environment-name)))
-        validated (validator/validate ContainerSearchSpec service-name)]
-    (if validated
+        project-dir (io/file docker-path (str path))]
       (if (check-directory-existence (.getAbsolutePath project-dir))
-        (run-docker-command (str command " " (:name validated)) (.getAbsolutePath project-dir))
-        (throw (ex-info "Bad request" {:error "Directory not found"})))
-      (throw (ex-info "Bad request" {:error "Invalid service name"})))))
+        (run-docker-command "container" (str command " " container-name) (.getAbsolutePath project-dir))
+        (throw (ex-info "Bad request" {:error "Directory not found"})))))
 
-(defn stop-service
-  [authorised-id environment-name service-name]
-  (handle-service authorised-id environment-name service-name "stop"))
+(def ContainerSearchSpec [:map
+                  [:container_id :int]])
 
-(defn down-service
-  [authorised-id environment-name service-name]
-  (handle-service authorised-id environment-name service-name "down"))
+(defn stop-container
+  [ds authorised-id environment-id data]
+  (let [env (has-access-env? ds authorised-id environment-id)
+        validated (validator/validate ContainerSearchSpec data)
+        container (first (get-container-by-id ds (:container_id validated)))]
+    (if (empty? container)
+      (throw (ex-info "Not found" {:errors "Container not found"}))
+      (handle-container (:path env) (str (:name container)) "stop"))))
 
-(defn start-service
-  [authorised-id environment-name service-name]
-  (handle-service authorised-id environment-name service-name "start"))
+(defn start-container
+  [ds authorised-id environment-id data]
+  (let [env (has-access-env? ds authorised-id environment-id)
+        validated (validator/validate ContainerSearchSpec data)
+        container (first (get-container-by-id ds (:container_id validated)))]
+    (if (empty? container)
+      (throw (ex-info "Not found" {:errors "Container not found"}))
+      (handle-container (:path env) (str (:name container)) "start"))))
 
 (def ComposeUpdateSpec [:map
                         [:data :string]])
@@ -140,9 +175,10 @@
           (str sb))))))
 
 (defn update-compose
-  [authorised-id environment-name path-data]
-  (let [docker-path (-> (fetch-config) :docker-path)
-        project-dir (io/file docker-path (str (str authorised-id) "/" (str environment-name)))
+  [ds authorised-id environment-id path-data]
+  (let [env (has-access-env? ds authorised-id environment-id)
+        docker-path (-> (fetch-config) :docker-path)
+        project-dir (io/file docker-path (str (:path env)))
         validated (validator/validate ComposeUpdateSpec path-data)]
     (if validated
       (if (check-directory-existence (.getAbsolutePath project-dir))
@@ -151,24 +187,35 @@
       (throw (ex-info "Bad request" {:error "Invalid data provided"})))))
 
 (defn get-compose
-  [authorised-id environment-name]
-  (let [docker-path (-> (fetch-config) :docker-path)
-        project-dir (io/file docker-path (str (str authorised-id) "/" (str environment-name)))]
+  [ds authorised-id environment-id]
+  (let [env (has-access-env? ds authorised-id environment-id)
+        docker-path (-> (fetch-config) :docker-path)
+        project-dir (io/file docker-path (str (:path env)))]
     (if (check-directory-existence (.getAbsolutePath project-dir))
       (read-from-file (str (.getAbsolutePath project-dir) "/docker-compose.yml"))
       (throw (ex-info "Bad request" {:error "Directory not found"})))))
 
 (def LogSizeSpec [:map
-                  [:name :string]
+                  [:container_id :int]
                   [:size :string]])
 
-(defn get-service-log
-  [authorised-id environment-name log-size]
-  (let [docker-path (-> (fetch-config) :docker-path)
-        project-dir (io/file docker-path (str (str authorised-id) "/" (str environment-name)))
+
+(defn get-container-log
+  [ds authorised-id environment-id log-size]
+  (let [env (has-access-env? ds authorised-id environment-id)
+        docker-path (-> (fetch-config) :docker-path)
+        project-dir (io/file docker-path (str (:path env)))
         validated (validator/validate LogSizeSpec log-size)]
     (if validated
-      (if (check-directory-existence (.getAbsolutePath project-dir))
-        (run-docker-command (str  "logs --tail=" (:size validated) " " (:name validated)) (.getAbsolutePath project-dir))
-        (throw (ex-info "Bad request" {:error "Directory not found"})))
+      (let [container (first (get-container-by-id ds (:container_id validated)))]
+        (if (empty? container)
+          (throw (ex-info "Not found" {:errors "Container not found"}))
+          (if (check-directory-existence (.getAbsolutePath project-dir))
+            (run-docker-command "container" (str  "logs --tail=" (:size validated) " " (str (:name container))) (.getAbsolutePath project-dir))
+            (throw (ex-info "Bad request" {:error "Directory not found"})))))
       (throw (ex-info "Bad request" {:error "Invalid data provided"})))))
+
+
+(defn get-all-environments
+  [ds authorised-id]
+  (json/write-str (get-all-user-environment ds authorised-id)))
