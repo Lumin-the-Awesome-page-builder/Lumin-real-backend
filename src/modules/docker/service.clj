@@ -165,7 +165,9 @@
         validated (validator/validate ComposeUpdateSpec compose-update-data)]
     (if validated
       (if (check-directory-existence (.getAbsolutePath project-dir))
-        (write-to-file (str (.getAbsolutePath project-dir) "/docker-compose.yml") (:data validated))
+        (do
+          (write-to-file (str (.getAbsolutePath project-dir) "/docker-compose.yml") (:data validated))
+          (json/write-str {:success "true"}))
         (throw (ex-info "Bad request" {:error "Directory not found"})))
       (throw (ex-info "Bad request" {:error "Invalid data provided"})))))
 
@@ -175,7 +177,8 @@
         docker-path (-> (fetch-config) :docker-path)
         project-dir (io/file docker-path (str (:path env)))]
     (if (check-directory-existence (.getAbsolutePath project-dir))
-      (read-from-file (str (.getAbsolutePath project-dir) "/docker-compose.yml"))
+      (let [compose (read-from-file (str (.getAbsolutePath project-dir) "/docker-compose.yml"))]
+        (json/write-str {:compose compose}))
       (throw (ex-info "Bad request" {:error "Directory not found"})))))
 
 (def LogSizeSpec [:map
