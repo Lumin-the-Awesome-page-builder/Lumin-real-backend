@@ -7,8 +7,7 @@
    (fn [request]
      (let [{:keys [data clients socket authorized]} request
            {:keys [redis]} (:deps request)]
-       (auth-client redis clients data (:sub authorized) socket)
-       {:status 200 :data "authorized"}))
+       (auth-client redis clients data (:sub authorized) socket)))
 
    "patch-tree"
    (fn [request]

@@ -18,8 +18,7 @@
 
 (defn- start-edit [rds ds authorized-id project-id]
   (let [project (-> (get-by-id ds project-id authorized-id) (hide-shared-secret))
-        tree (:data project)
-        _ (redis/start-edit rds project-id tree authorized-id)
+        tree (redis/start-edit rds project-id (:data project) authorized-id)
         secret (redis/get-or-create-secret rds project-id)
         jws-secret (-> (fetch-config) :jwt-secret-editor)]
     {:project (dissoc project :data)
@@ -28,8 +27,7 @@
 
 (defn- start-collaboration [rds ds authorized-id collaboration-key]
   (if-let [project-data (collaboration-key-valid? ds collaboration-key)]
-    (let [tree (:data project-data)
-          _ (redis/start-edit rds (:id project-data) tree authorized-id)
+    (let [tree (redis/start-edit rds (:id project-data) (:data project-data) authorized-id)
           secret (redis/get-or-create-secret rds (:id project-data))
           jws-secret (-> (fetch-config) :jwt-secret-editor)]
       {:project (-> project-data
@@ -76,6 +74,7 @@
             (conj ordering (first path))]
            [(assoc tree key on-replace)
             ordering]))
+
        (let [child (get tree key)
              {:keys [children childrenOrdering]} child
              [new-children new-ordering] (change-by-path children childrenOrdering (drop 1 path) on-replace remove?)]
@@ -123,7 +122,10 @@
     (when (some? already-active)
       (log/info "Already active: " already-active)
       (ws/close already-active))
-    (swap! clients assoc (str authorized-id "_" project-id) socket)))
+    (swap! clients assoc (str authorized-id "_" project-id) socket)
+    {:ok true
+     :type "auth-client"
+     :blocked (redis/get-blocked rds project-id)}))
 
 (def PatchProjectTreeSpec
   [:map
@@ -235,12 +237,12 @@
 (defn block-element [rds block-element-data authorized-id clients]
   (let [validated (validator/validate BlockPathSpec block-element-data)
         _ (validate-access rds (:access validated) (:project_id validated))
-        path (json/write-str (:path validated))]
-    (redis/block-element rds (:project_id validated) path)
+        key (-> validated :path last)]
+    (redis/block-element rds (:project_id validated) key)
     (notice-editors rds
                     clients
                     (:project_id validated)
-                    {:type "block" :data (:path validated)}
+                    {:type "block" :data key}
                     authorized-id)
     {:ok true}))
 
@@ -253,12 +255,12 @@
 (defn release-element [rds release-element-data authorized-id clients]
   (let [validated (validator/validate ReleasePathSpec release-element-data)
         _ (validate-access rds (:access validated) (:project_id validated))
-        key (json/write-str (:path validated))]
+        key (-> validated :path last)]
     (redis/release-element rds (:project_id validated) key)
     (notice-editors rds
                     clients
                     (:project_id validated)
-                    {:type "release" :data (:path validated)}
+                    {:type "release" :data key}
                     authorized-id)
     {:ok true}))
 
@@ -281,10 +283,12 @@
         _ (validate-access rds (:access validated) (:project_id validated))]
     (redis/remove-editor rds (:project_id validated) authorized-id)
     (when (not (redis/any-client-active? rds (:project_id validated)))
+      (log/info "NO ACTIVE CLIENTS")
       (redis/clear-cache rds (:project_id validated)))
     {:ok true}))
 
 (defn on-close [clients rds ds close-args]
+  (log/info "Socket closed")
   (log/info (count @clients))
   (log/info close-args)
   (let [closed (first close-args)
@@ -294,7 +298,10 @@
                                                             (when (or (not open?) (= closed socket))
                                                               (swap! clients dissoc client))
                                                             (and open? (not= closed socket)))))
-                            (mapv #(-> % first (string/split #"_") second)))]
+                            (mapv #(-> % first (string/split #"_") second))
+                            set)]
+    (log/info "ws clients" @clients)
+    (log/info "active clients" active-clients)
     (doseq [project (redis/get-active rds)]
       (when (not (contains? active-clients project))
         (->> project
