@@ -18,19 +18,19 @@
            {:keys [sub]} (:authorized request)]
        (response/response (get-all-environments datasource sub))))
 
-   (GET (prefixed "/:environment-id/start/all") request
+   (POST (prefixed "/:environment-id/start/all") request
      (let [{:keys [datasource]} (:deps request)
            {:keys [environment-id]} (:params request)
            {:keys [sub]} (:authorized request)]
        (response/response (start-all datasource sub (parse-long environment-id)))))
 
-   (GET (prefixed "/:environment-id/down/all") request
+   (POST (prefixed "/:environment-id/down/all") request
      (let [{:keys [datasource]} (:deps request)
            {:keys [environment-id]} (:params request)
            {:keys [sub]} (:authorized request)]
        (response/response (down-all datasource sub (parse-long environment-id)))))
 
-   (GET (prefixed "/:environment-id/stop/all") request
+   (POST (prefixed "/:environment-id/stop/all") request
      (let [{:keys [datasource]} (:deps request)
            {:keys [environment-id]} (:params request)
            {:keys [sub]} (:authorized request)]
@@ -42,19 +42,19 @@
            {:keys [sub]} (:authorized request)]
        (response/response (get-containers datasource sub (parse-long environment-id)))))
 
-   (POST (prefixed "/:environment-id/container/stop") request
+   (POST (prefixed "/:environment-id/container/:container-id/stop") request
      (let [{:keys [datasource]} (:deps request)
-           {:keys [environment-id]} (:params request)
+           {:keys [environment-id container-id]} (:params request)
            {:keys [sub]} (:authorized request)]
-       (response/response (stop-container datasource sub (parse-long environment-id) (:params request)))))
+       (response/response (stop-container datasource sub (parse-long environment-id) {:container_id container-id}))))
 
-   (POST (prefixed "/:environment-id/container/start") request
+   (POST (prefixed "/:environment-id/container/:container-id/start") request
      (let [{:keys [datasource]} (:deps request)
-           {:keys [environment-id]} (:params request)
+           {:keys [environment-id container-id]} (:params request)
            {:keys [sub]} (:authorized request)]
-       (response/response (start-container datasource sub (parse-long environment-id) (:params request)))))
+       (response/response (start-container datasource sub (parse-long environment-id) {:container_id container-id}))))
 
-   (POST (prefixed "/:environment-id/container/logs") request
+   (POST (prefixed "/:environment-id/container/:container_id/logs") request
      (let [{:keys [datasource]} (:deps request)
            {:keys [environment-id]} (:params request)
            {:keys [sub]} (:authorized request)]

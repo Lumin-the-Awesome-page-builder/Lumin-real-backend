@@ -28,9 +28,9 @@
   (let [{:keys [out exit]} (sh "docker-compose" "ps" "--format" "{{.Names}} {{.Status}}" :dir dir)]
     (if (= exit 0)
       (json/write-str
-       (map #(let [[name & status] (str/split % #" " 2)]
-               {:name name, :status (str/join " " status)})
-            (str/split-lines out)))
+        (map #(let [[name & status] (str/split % #" " 2)]
+                {:name name, :status (str/join " " status)})
+             (str/split-lines out)))
       (throw (ex-info "Error executing docker command" {:error "Not found"})))))
 
 (defn generate-docker-directory
@@ -69,13 +69,10 @@
     (if (check-directory-existence (.getAbsolutePath project-dir))
       (let [result (sh "sh" script-path (.getAbsolutePath project-dir))]
         (if (zero? (:exit result))
-          (let [json-list (list-containers (.getAbsolutePath project-dir))
-                containers (json/read-str json-list :key-fn keyword)
-                updated-containers (map (fn [container]
-                                          (let [con (first (insert-or-update-container ds (:name container) (:status container) environment-id))]
-                                            (assoc container :id (:id con))))
-                                        containers)]
-            (json/write-str updated-containers))
+          (->> project-dir .getAbsolutePath list-containers json/read-json
+               (map #(->> (insert-or-update-container ds (:name %) (:status %) environment-id) first :id
+                          (assoc % :id)))
+               json/write-str)
           (json/write-str {:status "error"
                            :message (:out result)})))
       (throw (ex-info "Bad request" {:error "Directory not found"})))))
@@ -84,7 +81,7 @@
   [ds authorised-id environment-id]
   (let [env (has-access-env? ds authorised-id environment-id)
         docker-path (-> (fetch-config) :docker-path)
-        project-dir (io/file docker-path (str (:path env)))]
+        project-dir (->> env :path str (io/file docker-path))]
     (if (check-directory-existence (.getAbsolutePath project-dir))
       (run-docker-command  "compose" "stop" (.getAbsolutePath project-dir))
       (throw (ex-info "Bad request" {:error "Project not found"})))))
@@ -104,13 +101,10 @@
         docker-path (-> (fetch-config) :docker-path)
         project-dir (io/file docker-path (str (:path env)))]
     (if (check-directory-existence (.getAbsolutePath project-dir))
-      (let [json-list (list-containers (.getAbsolutePath project-dir))
-            containers (json/read-str json-list :key-fn keyword)
-            updated-containers (map (fn [container]
-                                      (let [con (first (insert-or-update-container ds (:name container) (:status container) environment-id))]
-                                        (assoc container :id (:id con))))
-                                    containers)]
-        (json/write-str updated-containers))
+      (->> project-dir .getAbsolutePath list-containers json/read-json
+           (map #(->> (insert-or-update-container ds (:name %) (:status %) environment-id) first :id
+                      (assoc % :id)))
+           json/write-str)
       (throw (ex-info "Bad request" {:error "Not found"})))))
 
 (defn handle-container
