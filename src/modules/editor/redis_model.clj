@@ -48,7 +48,8 @@
   (log/info "Tree data" tree-data)
   (add-editor rds project-id user-id)
   (redis/hset rds "active" (str project-id) "active")
-  (redis/hset rds "tree" (tree-key project-id) tree-data))
+  (redis/hset rds "tree" (tree-key project-id) tree-data)
+  tree-data)
 
 (defn get-active [rds]
   (redis/hkeys rds "active"))
@@ -60,6 +61,7 @@
   (redis/hset rds "tree" (tree-key project-id) tree))
 
 (defn start-edit [rds project-id project-data user-id]
+  (log/info "project in edit" (project-in-edit? rds project-id) project-data)
   (if (project-in-edit? rds project-id)
     (do
       (add-editor rds project-id user-id)
@@ -89,9 +91,9 @@
     (redis/hget rds "secret" (secret-key project-id))
     (redis/hset rds "secret" (secret-key project-id) (generate-secret 30))))
 
-(defn block-element [rds project-id path]
+(defn block-element [rds project-id key]
   (if (project-in-edit? rds project-id)
-    (redis/hset rds (blocked-key project-id) path path)
+    (redis/hset rds (blocked-key project-id) key key)
     (throw (ex-info "Bad request" {:errors "project isn`t active"}))))
 
 (defn release-element [rds project-id key]
@@ -101,3 +103,8 @@
       (redis/hdel rds (blocked-key project-id) key)
       path)
     (throw (ex-info "Bad request" {:errors "project isn`t active or element is free"}))))
+
+(defn get-blocked [rds project-id]
+  (if (redis/exists rds (blocked-key project-id))
+    (redis/hvals rds (blocked-key project-id))
+    []))
