@@ -3,7 +3,7 @@
             [ring.util.response :as response]
             [modules.docker.service :refer [start-all stop-all down-all get-containers stop-container start-container
                                             update-compose get-compose get-container-log generate-docker-directory
-                                            get-all-environments]]))
+                                            get-all-environments generate-docker-hidden get-configurations get-configuration-by-id]]))
 
 (defn prefixed [url] (str "/lumin/docker" url))
 
@@ -11,7 +11,12 @@
   [(POST (prefixed "/environment") request
      (let [{:keys [datasource]} (:deps request)
            {:keys [sub]} (:authorized request)]
-       (response/response (generate-docker-directory datasource sub (:params request)))))
+       (response/response (generate-docker-directory datasource sub (:params request) false))))
+
+   (GET (prefixed "/environment/hidden") request
+     (let [{:keys [datasource]} (:deps request)
+           {:keys [sub]} (:authorized request)]
+       (response/response (generate-docker-hidden datasource sub))))
 
    (GET (prefixed "/environment") request
      (let [{:keys [datasource]} (:deps request)
@@ -70,4 +75,16 @@
      (let [{:keys [datasource]} (:deps request)
            {:keys [environment-id]} (:params request)
            {:keys [sub]} (:authorized request)]
-       (response/response (get-compose datasource sub (parse-long environment-id)))))])
+       (response/response (get-compose datasource sub (parse-long environment-id)))))
+   (GET (prefixed "/:environment-id/compose") request
+     (let [{:keys [datasource]} (:deps request)
+           {:keys [environment-id]} (:params request)
+           {:keys [sub]} (:authorized request)]
+       (response/response (get-compose datasource sub (parse-long environment-id)))))
+   (GET (prefixed "/configurations") request
+     (let [{:keys [datasource]} (:deps request)]
+       (response/response (get-configurations datasource))))
+   (GET (prefixed "/configurations/:configuration-id") request
+     (let [{:keys [datasource]} (:deps request)
+           {:keys [configuration-id]} (:params request)]
+       (response/response (get-configuration-by-id datasource (parse-long configuration-id)))))])
