@@ -9,16 +9,8 @@
             [utils.validator :as validator])
   (:import (java.io BufferedReader)))
 
-(defn file-exists?
-  [path]
-  (let [file (io/file path)]
-    (.exists file)))
-
-(defn check-directory-existence
-  [path]
-  (if (not (file-exists? path))
-    false
-    true))
+(defn check-directory-existence [path]
+  (-> path io/file .exists))
 
 (def ContainerCreateSpec [:map
                           [:name :string]])
@@ -136,7 +128,7 @@
   [ds authorised-id environment-id data]
   (let [env (has-access-env? ds authorised-id environment-id)
         validated (validator/validate ContainerSearchSpec data)
-        container (first (get-container-by-id ds (:container_id validated)))]
+        container (get-container-by-id ds (:container_id validated))]
     (if (empty? container)
       (throw (ex-info "Not found" {:errors "Container not found"}))
       (handle-container (:path env) (str (:name container)) "stop"))))
@@ -145,7 +137,7 @@
   [ds authorised-id environment-id data]
   (let [env (has-access-env? ds authorised-id environment-id)
         validated (validator/validate ContainerSearchSpec data)
-        container (first (get-container-by-id ds (:container_id validated)))]
+        container (get-container-by-id ds (:container_id validated))]
     (if (empty? container)
       (throw (ex-info "Not found" {:errors "Container not found"}))
       (handle-container (:path env) (str (:name container)) "start"))))
@@ -172,11 +164,11 @@
           (str sb))))))
 
 (defn update-compose
-  [ds authorised-id environment-id path-data]
+  [ds authorised-id environment-id compose-update-data]
   (let [env (has-access-env? ds authorised-id environment-id)
         docker-path (-> (fetch-config) :docker-path)
         project-dir (io/file docker-path (str (:path env)))
-        validated (validator/validate ComposeUpdateSpec path-data)]
+        validated (validator/validate ComposeUpdateSpec compose-update-data)]
     (if validated
       (if (check-directory-existence (.getAbsolutePath project-dir))
         (write-to-file (str (.getAbsolutePath project-dir) "/docker-compose.yml") (:data validated))
@@ -203,7 +195,7 @@
         project-dir (io/file docker-path (str (:path env)))
         validated (validator/validate LogSizeSpec log-size)]
     (if validated
-      (let [container (first (get-container-by-id ds (:container_id validated)))]
+      (let [container (get-container-by-id ds (:container_id validated))]
         (if (empty? container)
           (throw (ex-info "Not found" {:errors "Container not found"}))
           (if (check-directory-existence (.getAbsolutePath project-dir))

@@ -28,7 +28,7 @@
 
 (defn get-container-by-id
   [ds container-id]
-  (database/execute!
+  (database/execute-one!
    ds
    {:select [:container.*]
     :from [:container]
