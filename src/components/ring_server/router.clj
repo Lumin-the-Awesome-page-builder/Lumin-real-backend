@@ -5,6 +5,7 @@
             [modules.file.controller :as file]
             [modules.widget.controller :as widget]
             [modules.project.controller :as project]
+g            [modules.forms.controller :as form]
             [modules.editor.controller :as collab]
             [modules.editor.service :as collab-service]
             [utils.ws :as ws]
@@ -30,6 +31,7 @@
                      (widget/routes)
                      (file/routes)
                      (docker/routes)
+                     (form/routes)
                      [(ws/create-ws-endpoint "/lumin/collab/ws" ;Endpoint
                                              collab/ws-routes ;Router
                                              [(ws/wrap-exception-handling)
