@@ -45,19 +45,19 @@
 (defn get-containers-by-env-id
   [ds environment-id]
   (database/execute!
-    ds
-    {:select [:container.*]
-     :from [:container]
-     :where [:and [:= :hidden false] [:= :environment_id environment-id]]}))
+   ds
+   {:select [:container.*]
+    :from [:container]
+    :where [:and [:= :hidden false] [:= :environment_id environment-id]]}))
 
 (defn update-container-status
   [ds container-id status]
   (database/execute!
-    ds
-    {:update [:container]
-     :set {:status status}
-     :where [:= :id container-id]
-     :returning [:id :name :status]}))
+   ds
+   {:update [:container]
+    :set {:status status}
+    :where [:= :id container-id]
+    :returning [:id :name :status]}))
 
 (defn create-environment
   [ds user-id name path hidden]

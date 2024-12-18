@@ -99,8 +99,8 @@
 (defn refresh-container-status
   [ds container-id container-name]
   (let [cmd ["docker" "ps" "-a" "--filter" (str "name=" container-name) "--format" "{{.Status}}"]
-       result (sh "bash" "-c" (clojure.string/join " " cmd))
-       status (clojure.string/trim (:out result))]
+        result (sh "bash" "-c" (clojure.string/join " " cmd))
+        status (clojure.string/trim (:out result))]
     (update-container-status ds container-id status)
     (json/write-str {:name container-name
                      :status status})))
