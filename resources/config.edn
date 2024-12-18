@@ -9,6 +9,6 @@
             :password #include "secrets.edn"}
  :file-path #include "file_path.edn"
  :redis {:url "redis://localhost:6379"}
- :docker-path #include "docker_path.edn"}
-
+ :docker-path #include "docker_path.edn"
+ :docker-host-path #include "docker_host_path.edn"}
 
