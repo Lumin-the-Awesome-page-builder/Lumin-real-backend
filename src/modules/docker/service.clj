@@ -253,10 +253,11 @@
         (json/write-str (create-environment ds authorised-id (:name validated) path false))))))
 
 (def ExeFileSpec [:map
+                  [:configuration_id :int]
                   [:name
-                   [:extension :string]
-                   [:file :string]]
-                  [:configuration_id :int]])
+                   [:map
+                    [:extension :string]
+                    [:file :string]]]])
 
 (defn environment-upload
   [ds authorised-id environment-id file-data]
@@ -264,5 +265,6 @@
         env (has-access-env? ds authorised-id environment-id)
         validated (validator/validate ExeFileSpec file-data)
         configuration (get-configuration ds (:configuration_id validated))
-        path (str docker-path "/" (:path env) "/" (:mapping configuration) "." (:extension validated))]
-    (f/save-base64-file-custom-prefix (:file validated) path)))
+        path (str docker-path "/" (:path env) "/" (:mapping configuration) "." (:extension (:name validated)))]
+    (println path (:extension (:name validated)) (:configuration_id validated))
+    (f/save-base64-file-custom-prefix (:file (:name validated)) path)))
