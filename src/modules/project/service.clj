@@ -18,15 +18,17 @@
 
 (defn get-by-id
   ([ds project-id]
-   (let [project (get-project ds project-id)]
+   (let [project (get-project ds project-id)
+         forms (get-forms-by-project ds project-id)]
      (assoc project :tags (map :tag (get-tags ds project-id)))
-     (assoc project :forms-id (map :id (get-forms-by-project ds project-id)))))
+     (assoc project :forms (map #(select-keys % [:id :name]) forms))))
   ([ds project-id authorized-id]
    (let [project (->> project-id
                       (get-project ds)
-                      (has-access? authorized-id))]
+                      (has-access? authorized-id))
+         forms (get-forms-by-project ds project-id)]
      (assoc project :tags (map :tag (get-tags ds project-id)))
-     (assoc project :forms-id (map :id (get-forms-by-project ds project-id))))))
+     (assoc project :forms (map #(select-keys % [:id :name]) forms)))))
 
 (defn hide-shared-secret
   [project-data]

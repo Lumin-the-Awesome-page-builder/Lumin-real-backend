@@ -6,15 +6,15 @@
   (database/execute-one!
    ds
    {:insert-into [:form]
-    :columns [:owner_id :project_id :fields :url_post :url_get :created_at]
-    :values [[authorised-id (parse-long (:project-id dto)) (:fields dto) (:url-post dto) (:url-get dto) (System/currentTimeMillis)]]
+    :columns [:owner_id :project_id :fields :url_post :url_get :created_at :name]
+    :values [[authorised-id (parse-long (:project-id dto)) (:fields dto) (:url-post dto) (:url-get dto) (System/currentTimeMillis) (:name dto)]]
     :returning :id}))
 
 (defn get-form-by-id
   [ds id]
   (database/execute-one!
    ds
-   {:select [:id, :owner_id, :project_id, :fields]
+   {:select [:id, :owner_id, :project_id, :fields, :name]
     :from [:form]
     :where [:= :id id]}))
 
@@ -22,7 +22,7 @@
   [ds project-id]
   (database/execute!
     ds
-    {:select [:id]
+    {:select [:id :name]
      :from [:form]
      :where [:= :project_id project-id]}))
 
