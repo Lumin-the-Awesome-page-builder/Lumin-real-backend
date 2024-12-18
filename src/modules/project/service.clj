@@ -1,7 +1,9 @@
 (ns modules.project.service
   (:refer-clojure :exclude [remove])
   (:require [clojure.data.json :as json]
-            [modules.project.model :refer [get-project patch-project patch-project-preview create-project set-tags get-tags remove-project patch-share]]
+            [modules.project.model :refer [get-project patch-project patch-project-preview create-project
+                                           set-tags get-tags remove-project patch-share]]
+            [modules.forms.model :refer [get-forms-by-project]]
             [utils.validator :as validator]
             [utils.file :as f]
             [utils.jwt :as jwt]
@@ -17,12 +19,14 @@
 (defn get-by-id
   ([ds project-id]
    (let [project (get-project ds project-id)]
-     (assoc project :tags (map :tag (get-tags ds project-id)))))
+     (assoc project :tags (map :tag (get-tags ds project-id)))
+     (assoc project :forms-id (map :id (get-forms-by-project ds project-id)))))
   ([ds project-id authorized-id]
    (let [project (->> project-id
                       (get-project ds)
                       (has-access? authorized-id))]
-     (assoc project :tags (map :tag (get-tags ds project-id))))))
+     (assoc project :tags (map :tag (get-tags ds project-id)))
+     (assoc project :forms-id (map :id (get-forms-by-project ds project-id))))))
 
 (defn hide-shared-secret
   [project-data]

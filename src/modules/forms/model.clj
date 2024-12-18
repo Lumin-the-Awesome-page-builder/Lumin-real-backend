@@ -18,6 +18,14 @@
     :from [:form]
     :where [:= :id id]}))
 
+(defn get-forms-by-project
+  [ds project-id]
+  (database/execute!
+    ds
+    {:select [:id]
+     :from [:form]
+     :where [:= :project_id project-id]}))
+
 (defn insert-data-by-form
   [ds form-id data]
   (database/execute-one!
