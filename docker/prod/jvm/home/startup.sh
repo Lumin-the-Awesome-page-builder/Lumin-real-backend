@@ -5,5 +5,5 @@ curl -L -O https://github.com/clojure/brew-install/releases/latest/download/posi
 chmod +x posix-install.sh
 ./posix-install.sh
 
-sleep 3600
+sleep 36000
 #java -jar -Dclojure.tools.logging.factory=clojure.tools.logging.impl/log4j2-factory /home/Lumin-backend.jar

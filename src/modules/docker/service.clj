@@ -6,7 +6,7 @@
             [clojure.java.shell :refer [sh]]
             [clojure.data.json :as json]
             [modules.docker.model :refer [get-environment-by-id create-environment get-container-by-id
-                                          insert-or-update-container get-all-user-environment get-all-configurations
+                                          get-all-user-environment get-all-configurations
                                           get-configuration get-configuration-full get-containers-by-env-id update-container-status]]
             [utils.file :as f]
             [utils.validator :as validator]
@@ -71,6 +71,25 @@
                        :stderr (:err result)
                        :exit-code (:exit result)})))))
 
+(defn refresh-container-status
+  [ds container-id container-name]
+  (let [cmd ["docker" "ps" "-a" "--filter" (str "name=" container-name) "--format" "{{.Status}}"]
+        result (execute-host-docker-command (-> (fetch-config) :docker-host-path) "bash" "-c" (clojure.string/join " " cmd))
+        status (clojure.string/trim (:out result))]
+    (update-container-status ds container-id status)
+    (json/write-str {:id container-id
+                     :name container-name
+                     :status status})))
+
+(defn get-containers
+  [ds authorised-id environment-id]
+  (has-access-env? ds authorised-id environment-id)
+  (-> (let [containers (get-containers-by-env-id ds environment-id)]
+        (for [container containers]
+          (-> (refresh-container-status ds (:id container) (:name container))
+              json/read-json)))
+      json/write-str))
+
 (defn start-all
   [ds authorised-id environment-id]
   (log/info "Start all conatainers of" environment-id)
@@ -82,10 +101,7 @@
     (if (check-directory-existence (.getAbsolutePath project-dir))
       (let [result (execute-host-docker-command docker-host-path "sh" script-path (str docker-host-path "/" (:path env)))]
         (if (zero? (:exit result))
-          (->> (str docker-host-path "/" (:path env)) list-containers json/read-json
-               (map #(->> (insert-or-update-container ds (:name %) (:status %) environment-id) first :id
-                          (assoc % :id)))
-               json/write-str)
+          (get-containers ds authorised-id environment-id)
           (json/write-str {:status "error"
                            :message (:out result)})))
       (throw (ex-info "Bad request" {:error "Directory not found"})))))
@@ -110,22 +126,6 @@
       (run-docker-command "compose" (str docker-host-path "/" (:path env)) "down")
       (throw (ex-info "Bad request" {:error "Project not found"})))))
 
-(defn refresh-container-status
-  [ds container-id container-name]
-  (let [cmd ["docker" "ps" "-a" "--filter" (str "name=" container-name) "--format" "{{.Status}}"]
-        result (sh "bash" "-c" (clojure.string/join " " cmd))
-        status (clojure.string/trim (:out result))]
-    (update-container-status ds container-id status)
-    (json/write-str {:name container-name
-                     :status status})))
-
-(defn get-containers
-  [ds authorised-id environment-id]
-  (has-access-env? ds authorised-id environment-id)
-  (let [containers (get-containers-by-env-id ds environment-id)]
-    (for [container containers]
-      (refresh-container-status ds (:id container) (:name container)))))
-
 (defn handle-container
   [path container-name command]
   (let [docker-path (-> (fetch-config) :docker-path)
@@ -147,6 +147,7 @@
 
 (defn start-container
   [ds authorised-id environment-id container-id]
+  (log/info "START CONTAINER" authorised-id environment-id container-id)
   (let [env (has-access-env? ds authorised-id environment-id)
         container (get-container-by-id ds container-id)]
     (if (empty? container)
