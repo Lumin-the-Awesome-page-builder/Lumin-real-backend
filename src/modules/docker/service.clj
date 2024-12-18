@@ -7,7 +7,8 @@
             [clojure.data.json :as json]
             [modules.docker.model :refer [get-environment-by-id create-environment get-container-by-id
                                           get-all-user-environment get-all-configurations
-                                          get-configuration get-configuration-full get-containers-by-env-id update-container-status]]
+                                          get-configuration get-configuration-full get-containers-by-env-id update-container-status
+                                          insert-or-update-container]]
             [utils.file :as f]
             [utils.validator :as validator]
             [babashka.http-client :as http])
@@ -101,7 +102,12 @@
     (if (check-directory-existence (.getAbsolutePath project-dir))
       (let [result (execute-host-docker-command docker-host-path "sh" script-path (str docker-host-path "/" (:path env)))]
         (if (zero? (:exit result))
-          (get-containers ds authorised-id environment-id)
+          (do
+            (let [name (nth (str/split (str (:err result)) #"\s+") 2)
+                  status (nth (str/split (str (:err result)) #"\s+") 3)]
+              (println name status)
+              (insert-or-update-container ds name status environment-id))
+            (get-containers ds authorised-id environment-id))
           (json/write-str {:status "error"
                            :message (:out result)})))
       (throw (ex-info "Bad request" {:error "Directory not found"})))))
