@@ -94,3 +94,11 @@
    {:select [:id, :name, :mapping]
     :from [:configuration]
     :where [:= :id configuration-id]}))
+
+(defn get-configuration-full
+  [ds configuration-id]
+  (database/execute-one!
+   ds
+   {:select [:id, :name, :mapping, :path]
+    :from [:configuration]
+    :where [:= :id configuration-id]}))

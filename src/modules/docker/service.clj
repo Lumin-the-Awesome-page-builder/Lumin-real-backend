@@ -6,7 +6,8 @@
             [clojure.data.json :as json]
             [modules.docker.model :refer [get-environment-by-id create-environment get-container-by-id
                                           insert-or-update-container get-all-user-environment get-all-configurations
-                                          get-configuration]]
+                                          get-configuration get-configuration-full]]
+            [utils.file :as f]
             [utils.validator :as validator])
   (:import (java.io BufferedReader)))
 
@@ -230,3 +231,38 @@
 (defn get-configuration-by-id
   [ds configuration-id]
   (json/write-str (get-configuration ds configuration-id)))
+
+(defn copy-dir
+  [source-path target-path dir]
+  (sh "cp" "-r" (str source-path "/") target-path :dir dir))
+
+(defn create-env-by-server-made-configuration
+  [ds authorised-id configuration-id environment-name]
+  (let [docker-path (-> (fetch-config) :docker-path)
+        validated (validator/validate ContainerCreateSpec environment-name)
+        configuration (get-configuration-full ds configuration-id)
+        path (str authorised-id "/" (:name validated) "-" authorised-id)
+        project-dir (io/file docker-path path)
+        configuration-dir (io/file (:path configuration))]
+    (if (.exists project-dir)
+      (throw (ex-info "Bad request"
+                      {:environment-name (:name validated) :message "This name already is used"}))
+      (do
+        (.mkdirs project-dir)
+        (copy-dir (.getAbsolutePath configuration-dir) (.getAbsolutePath project-dir) (.getAbsolutePath configuration-dir))
+        (json/write-str (create-environment ds authorised-id (:name validated) path false))))))
+
+(def ExeFileSpec [:map
+                  [:name
+                   [:extension :string]
+                   [:file :string]]
+                  [:configuration_id :int]])
+
+(defn environment-upload
+  [ds authorised-id environment-id file-data]
+  (let [docker-path (-> (fetch-config) :docker-path)
+        env (has-access-env? ds authorised-id environment-id)
+        validated (validator/validate ExeFileSpec file-data)
+        configuration (get-configuration ds (:configuration_id validated))
+        path (str docker-path "/" (:path env) "/" (:mapping configuration) "." (:extension validated))]
+    (f/save-base64-file-custom-prefix (:file validated) path)))
