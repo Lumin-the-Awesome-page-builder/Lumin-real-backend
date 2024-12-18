@@ -252,6 +252,7 @@
 
 (defn copy-dir
   [source-path target-path dir]
+  (log/info "Copy" (str source-path "/") target-path dir)
   (sh "cp" "-r" (str source-path "/") target-path :dir dir))
 
 (defn create-env-by-server-made-configuration
@@ -261,7 +262,9 @@
         configuration (get-configuration-full ds configuration-id)
         path (str authorised-id "/" (:name validated) "-" authorised-id)
         project-dir (io/file docker-path path)
+        path (str path "/" (-> configuration :path (str/split #"/") last))
         configuration-dir (io/file (:path configuration))]
+    (log/info (-> configuration :path (str/split #"/")))
     (if (.exists project-dir)
       (throw (ex-info "Bad request"
                       {:environment-name (:name validated) :message "This name already in use"}))
@@ -272,10 +275,28 @@
 
 (def ExeFileSpec [:map
                   [:configuration_id :int]
-                  [:name
-                   [:map
-                    [:extension :string]
-                    [:file :string]]]])
+                  [:files [:sequential [:map
+                                        [:name :string]
+                                        [:extension :string]
+                                        [:file :string]]]]])
+
+(defn get-file-by-name [files file-name]
+  (let [item (filter #(= (:name %) (name file-name)) files)]
+    (if (seq item)
+      (first item)
+      nil)))
+
+(defn process-mapping-entry [env-path entry files]
+  (let [file (get-file-by-name files (first entry))
+        path (str env-path "/" (-> entry second :path))]
+    (log/info file path entry)
+    (when (some? file)
+      (f/save-base64-file-custom-prefix (:file file) path))))
+
+(defn save-by-mapping [env-path mapping files]
+  (->> mapping
+       json/read-json
+       (map #(process-mapping-entry env-path % files))))
 
 (defn environment-upload
   [ds authorised-id environment-id file-data]
@@ -283,6 +304,9 @@
         env (has-access-env? ds authorised-id environment-id)
         validated (validator/validate ExeFileSpec file-data)
         configuration (get-configuration ds (:configuration_id validated))
-        path (str docker-path "/" (:path env) "/" (:mapping configuration) "." (:extension (:name validated)))]
-    (println path (:extension (:name validated)) (:configuration_id validated))
-    (f/save-base64-file-custom-prefix (:file (:name validated)) path)))
+        env-path (str docker-path "/" (:path env))]
+    (log/info env-path)
+    (log/info configuration)
+    (log/info env)
+    (log/info file-data)
+    (save-by-mapping env-path (:mapping configuration) (:files file-data))))

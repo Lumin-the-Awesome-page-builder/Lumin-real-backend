@@ -25,6 +25,7 @@
   (try
     (let [decoder (Base64/getDecoder)
           bytes (.decode decoder base64-str)]
+      (log/info "Save file to " file-name)
       (with-open [os (io/output-stream file-name)]
         (.write os bytes)))
     (catch Exception e
