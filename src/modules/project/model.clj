@@ -35,6 +35,31 @@
         :returning [:tag]})
       [])))
 
+(defn insert-nginx-path-and-domain-name
+  [ds project-id nginx-path domain-name]
+  (database/execute-one!
+    ds
+    {:update [:project]
+     :set {:nginx_path nginx-path
+           :domain_name domain-name}
+     :where [:= :id project-id]}))
+
+(defn get-nginx-path-and-domain-name
+  [ds project-id]
+  (database/execute-one!
+    ds
+    {:select [:nginx_path :domain_name]
+     :from [:project]
+     :where [:= :id project-id]}))
+
+(defn get-project-by-domain
+  [ds domain-name]
+  (database/execute-one!
+    ds
+    {:select [:id]
+     :from [:project]
+     :where [:= :domain_name domain-name]}))
+
 (defn get-tags
   [ds project-id]
   (database/execute!
