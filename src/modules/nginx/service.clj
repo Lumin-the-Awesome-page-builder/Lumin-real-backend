@@ -12,12 +12,11 @@
             [utils.file :refer [save-base64-file-custom-prefix]]
             [utils.validator :as validator]))
 
-
 (def UpdateIndexSpec [:map
-                     [:data :string]])
+                      [:data :string]])
 
 (def DomainNameSpec [:map
-                      [:name :string]])
+                     [:name :string]])
 
 (defn has-access-domain-name?
   [ds domain-name]

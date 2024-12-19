@@ -21,10 +21,10 @@
 (defn get-forms-by-project
   [ds project-id]
   (database/execute!
-    ds
-    {:select [:id :name]
-     :from [:form]
-     :where [:= :project_id project-id]}))
+   ds
+   {:select [:id :name]
+    :from [:form]
+    :where [:= :project_id project-id]}))
 
 (defn insert-data-by-form
   [ds form-id data]
@@ -59,7 +59,6 @@
     (assoc dto :url-get (:url_get form))
     dto))
 
-
 (defn update-form
   [ds form-id dto form]
   (let [update-name (update-name-dto dto form)
@@ -67,15 +66,14 @@
         update-post (update-post-dto update-fields form)
         update-get (update-get-dto update-post form)]
     (database/execute-one!
-      ds
-      {:update [:form]
-       :set {:name (:name update-get)
-             :fields (:fields update-get)
-             :url-post (:url-post update-get)
-             :url-get (:url-get update-get)}
-       :where [:= :id form-id]
-       :returning [:id]})))
-
+     ds
+     {:update [:form]
+      :set {:name (:name update-get)
+            :fields (:fields update-get)
+            :url-post (:url-post update-get)
+            :url-get (:url-get update-get)}
+      :where [:= :id form-id]
+      :returning [:id]})))
 
 (defn get-all-data
   [ds id]
