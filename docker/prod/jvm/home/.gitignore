@@ -1,2 +1,5 @@
 *.png
 Lumin-backend.jar
+sources
+/check_containers.sh
+/3
