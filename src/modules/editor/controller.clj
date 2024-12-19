@@ -1,6 +1,6 @@
 (ns modules.editor.controller
   (:require [ring.websocket :as ws]
-            [modules.editor.service :refer [auth-client patch-tree update-prop block-element release-element save-project close-edit remove-element patch-item-ordering]]))
+            [modules.editor.service :refer [auth-client patch-tree update-prop block-element release-element save-project close-edit remove-element patch-item-ordering cursor-rendering delete-cursor]]))
 
 (def ws-routes
   {"auth"
@@ -62,4 +62,16 @@
      (let [{:keys [clients]} request]
        (doseq [client @clients]
          (ws/send (second client) "ping"))
-       {:status 200 :data nil}))})
+       {:status 200 :data nil}))
+
+   "cursor-updated"
+   (fn [request]
+     (let [{:keys [data clients authorized]} request
+           {:keys [redis]} (:deps request)]
+       (cursor-rendering redis data (:sub authorized) clients)))
+
+   "delete-cursor"
+   (fn [request]
+     (let [{:keys [data clients authorized]} request
+           {:keys [redis]} (:deps request)]
+       (delete-cursor redis data (:sub authorized) clients)))})
