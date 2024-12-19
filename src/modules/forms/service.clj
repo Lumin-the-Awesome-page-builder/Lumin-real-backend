@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [remove])
   (:require [clojure.data.json :as json]
             [modules.project.model :refer [get-project]]
-            [modules.forms.model :refer [insert-form get-form-by-id insert-data-by-form get-all-data]]
+            [modules.forms.model :refer [insert-form get-form-by-id insert-data-by-form get-all-data update-form]]
             [utils.validator :as validator]))
 
 (def CreateFormSpec [:map
@@ -57,3 +57,15 @@
   [ds authorised-id form-id]
   (let [form (has-access-form? ds authorised-id form-id)]
     (json/write-str (get-all-data ds (:id form)))))
+
+(def UpdateFormSpec [:map
+                     [:name {:optional true} string?]
+                     [:fields {:optional true} string?]
+                     [:url-post {:optional true} string?]
+                     [:url-get {:optional true} string?]])
+
+(defn patch-form
+  [ds authorised-id form-id patch-data]
+  (let [form (has-access-form? ds authorised-id form-id)
+        validated (validator/validate UpdateFormSpec patch-data)]
+    (json/write-str (update-form ds form-id validated form))))
