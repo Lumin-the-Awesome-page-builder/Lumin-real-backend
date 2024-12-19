@@ -1,0 +1,1 @@
+ALTER TABLE form RENAME COLUMN usl_get TO url_get;

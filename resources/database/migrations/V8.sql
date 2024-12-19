@@ -1,0 +1,1 @@
+alter table environment add column hidden bool;

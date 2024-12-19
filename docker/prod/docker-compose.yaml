@@ -17,6 +17,7 @@ services:
       - postgres
     restart: always
     entrypoint: /bin/bash /home/startup.sh
+#    command: /bin/bash
   nginx:
     build: ./nginx
     ports:
@@ -52,13 +53,18 @@ services:
   postgres:
     build: ./postgres
     restart: always
-    ports:
-      - 5432:5432
+#    ports:
+#      - 5432:5432
     environment:
       POSTGRES_PASSWORD: my-secret-pw
     volumes:
       - ./postgres/home:/home
       - ./postgres/root:/root
       - ./postgres/init.d:/docker-entrypoint-initdb.d
+    networks:
+      - iternal-lumin
+  redis:
+    image: redis:alpine
+    restart: always
     networks:
       - iternal-lumin

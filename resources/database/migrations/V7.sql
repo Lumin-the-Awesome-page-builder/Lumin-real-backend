@@ -1,0 +1,1 @@
+alter table container add column hidden bool;

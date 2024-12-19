@@ -17,6 +17,7 @@
         info.sunng/ring-jetty9-adapter {:mvn/version "0.36.0"}
 
         compojure/compojure {:mvn/version "1.7.1"}
+        org.babashka/http-client {:mvn/version "0.3.11"}
 
         buddy/buddy-hashers {:mvn/version "2.0.167"}
         buddy/buddy-sign {:mvn/version "3.5.351"}
@@ -41,7 +42,10 @@
            :uberjar {
                      :replace-deps {uberdeps/uberdeps {:mvn/version "1.4.0"}}
                      :replace-paths ["src" "resources" "deploy" "classes"]
-                     :main-opts ["-m" "uberdeps.uberjar"]}}
+                     :main-opts ["-m" "uberdeps.uberjar"]}
+           :repl {:jvm-opts ["-Dclojure.tools.logging.factory=clojure.tools.logging.impl/log4j2-factory"]}}
 
 
- :paths ["src" "resources" "dev" "deploy" "classes"]}
+
+
+ :paths ["src" "resources" "dev" "deploy" "classes" "exposed_bash_service"]}
