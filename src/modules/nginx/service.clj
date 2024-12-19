@@ -48,7 +48,6 @@
       (throw (ex-info "Bad request" {}))
       (do
         (.mkdirs nginx-dir)
-        (str user-nginx-path "/nginx.conf")
         (copy-dir (.getAbsolutePath nginx-base-dir) (.getAbsolutePath nginx-dir) (.getAbsolutePath nginx-base-dir))
         (let [template (slurp (str user-nginx-path "/nginx.conf"))
               updated-content
@@ -74,8 +73,7 @@
         path-and-domain (get-nginx-path-and-domain-name ds (:id project))
         file-path (str (:nginx_path path-and-domain) "/nginx.conf")
         link-to-domain (str "/etc/nginx/sites-enabled/" (:domain_name path-and-domain) ".dudosyka.ru")]
-    (do
-      (execute-host-docker-command (:nginx_path path-and-domain) "ln" "-s" file-path link-to-domain)
-      (execute-host-docker-command (:nginx_path path-and-domain) "certbot" "--nginx" "-d" (str (:domain_name path-and-domain) ".dudosyka.ru"))
-      (execute-host-docker-command (:nginx_path path-and-domain) "systemctl" "restart" "nginx")
-      (json/write-str {:success "true"}))))
+    (execute-host-docker-command (:nginx_path path-and-domain) "ln" "-s" file-path link-to-domain)
+    (execute-host-docker-command (:nginx_path path-and-domain) "certbot" "--nginx" "-d" (str (:domain_name path-and-domain) ".dudosyka.ru"))
+    (execute-host-docker-command (:nginx_path path-and-domain) "systemctl" "restart" "nginx")
+    (json/write-str {:success "true"})))
