@@ -66,3 +66,5 @@ services:
   redis:
     image: redis:alpine
     restart: always
+    networks:
+      - iternal-lumin

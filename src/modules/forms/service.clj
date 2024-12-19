@@ -46,16 +46,16 @@
                      [:data :string]])
 
 (defn post-data
-  [ds authorised-id form-id data]
-  (let [form (has-access-form? ds authorised-id form-id)
+  [ds _ form-id data]
+  (let [form (get-form-by-id ds form-id)
         validated (validator/validate InsertFormSpec data)]
     (if validated
       (json/write-str (insert-data-by-form ds (:id form) (:data validated)))
       (throw (ex-info "Bed request" {:message "Bed data provided"})))))
 
 (defn get-data
-  [ds authorised-id form-id]
-  (let [form (has-access-form? ds authorised-id form-id)]
+  [ds _ form-id]
+  (let [form (get-form-by-id ds form-id)]
     (json/write-str (get-all-data ds (:id form)))))
 
 (def UpdateFormSpec [:map
