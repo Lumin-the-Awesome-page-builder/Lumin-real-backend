@@ -1,4 +1,4 @@
-create table from (
+create table form (
     id serial primary key,
     owner_id int,
     project_id int,
@@ -16,7 +16,7 @@ create table from (
         on update cascade
 );
 
-create table froms_data (
+create table forms_data (
     id serial primary key,
     form_id int,
     data text,
