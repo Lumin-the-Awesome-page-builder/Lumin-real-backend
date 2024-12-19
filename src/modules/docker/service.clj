@@ -37,15 +37,6 @@
       :body
       json/read-json))
 
-(defn list-containers [dir]
-  (let [{:keys [out exit]} (execute-host-docker-command dir "docker" "compose" "ps" "--format" "{{.Names}} {{.Status}}")]
-    (if (= exit 0)
-      (json/write-str
-       (map #(let [[name & status] (str/split % #" " 2)]
-               {:name name, :status (str/join " " status)})
-            (str/split-lines out)))
-      (throw (ex-info "Error executing docker command" {:error "Not found"})))))
-
 (defn generate-docker-directory
   [ds authorised-id directory-name hidden]
   (let [docker-path (-> (fetch-config) :docker-path)
