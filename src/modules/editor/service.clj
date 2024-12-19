@@ -327,3 +327,32 @@
                     {:type "remove-element" :data (last (:path validated))}
                     authorized-id)
     {:ok true}))
+
+(def CursorCoordinatesSpec
+  [:map
+   [:x int?]
+   [:y int?]
+   [:project_id int?]
+   [:access string?]])
+(defn cursor-rendering [rds cursor-coordinates-data authorized-id clients]
+  (let [validated (validator/validate CursorCoordinatesSpec cursor-coordinates-data)
+        _ (validate-access rds (:access validated) (:project_id validated))]
+    (notice-editors rds
+                    clients
+                    (:project_id validated)
+                    {:type "cursor-updated" :data {:userId authorized-id
+                                                   :position {:x (:x cursor-coordinates-data)
+                                                              :y (:y cursor-coordinates-data)}}}
+                    authorized-id)
+    {:ok true}))
+
+(defn delete-cursor [rds project-data authorized-id clients]
+  (let [validated (validator/validate ProjectIdSpec project-data)
+        _ (validate-access rds (:access validated) (:project_id validated))]
+    (notice-editors rds
+                    clients
+                    (:project_id validated)
+                    {:type "delete-cursor" :data {:userId authorized-id}}
+                    authorized-id)
+    {:ok true}))
+
