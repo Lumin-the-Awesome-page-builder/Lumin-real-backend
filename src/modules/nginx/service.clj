@@ -38,24 +38,25 @@
         validated (validator/validate DomainNameSpec domain-name)
         project (has-access-project? ds authorised-id project-id)
         path (str authorised-id "/" project-id)
-        nginx-base-dir (io/file docker-path "nginx-base")
-        nginx-dir (io/file docker-host-path path)
-        user-nginx-path (str (.getAbsolutePath nginx-dir) "/nginx-base")
+        nginx-dir (io/file docker-path path)
+        pre-user-nginx-path (io/file docker-host-path)
+        user-nginx-path (str (.getAbsolutePath pre-user-nginx-path) "/" path  "/nginx-base")
         replacements {:path_to_user_dir user-nginx-path
-                      :domain_name (:name validated)}]
+                      :domain_name (:name validated)}
+        search-user-nginx-path (str (.getAbsolutePath nginx-dir) "/nginx-base")]
     (has-access-domain-name? ds (:name validated))
     (if (.exists nginx-dir)
       (throw (ex-info "Bad request" {}))
       (do
         (.mkdirs nginx-dir)
-        (copy-dir (.getAbsolutePath nginx-base-dir) (.getAbsolutePath nginx-dir) (.getAbsolutePath nginx-base-dir))
-        (let [template (slurp (str user-nginx-path "/nginx.conf"))
+        (copy-dir "/home/nginx-base" (.getAbsolutePath nginx-dir) "/home/nginx-base")
+        (let [template (slurp (str search-user-nginx-path "/nginx.conf"))
               updated-content
               (string/replace template #"\{\{(.+?)\}\}"
                               (fn [[_ key]]
                                 (get replacements (keyword key) "")))]
-          (spit (str user-nginx-path "/nginx.conf") updated-content))
-        (insert-nginx-path-and-domain-name ds (:id project) user-nginx-path (:name validated))
+          (spit (str search-user-nginx-path "/nginx.conf") updated-content))
+        (insert-nginx-path-and-domain-name ds (:id project) search-user-nginx-path (:name validated))
         (json/write-str {:success "true"})))))
 
 (defn update-index
@@ -70,10 +71,12 @@
 (defn reload-nginx
   [ds authorised-id project-id]
   (let [project (has-access-project? ds authorised-id project-id)
+        dir (-> (fetch-config) :docker-host-path)
         path-and-domain (get-nginx-path-and-domain-name ds (:id project))
         file-path (str (:nginx_path path-and-domain) "/nginx.conf")
         link-to-domain (str "/etc/nginx/sites-enabled/" (:domain_name path-and-domain) ".dudosyka.ru")]
-    (execute-host-docker-command (:nginx_path path-and-domain) "ln" "-s" file-path link-to-domain)
-    (execute-host-docker-command (:nginx_path path-and-domain) "certbot" "--nginx" "-d" (str (:domain_name path-and-domain) ".dudosyka.ru"))
-    (execute-host-docker-command (:nginx_path path-and-domain) "systemctl" "restart" "nginx")
+
+    (execute-host-docker-command (str dir) "ln" "-s" file-path link-to-domain)
+    (execute-host-docker-command (str dir) "certbot" "--nginx" "-d" (str (:domain_name path-and-domain) ".dudosyka.ru"))
+    (execute-host-docker-command (str dir) "systemctl" "restart" "nginx")
     (json/write-str {:success "true"})))
