@@ -76,7 +76,7 @@
         file-path (str (:nginx_path path-and-domain) "/nginx.conf")
         link-to-domain (str "/etc/nginx/sites-enabled/" (:domain_name path-and-domain) ".dudosyka.ru")]
 
-    (execute-host-docker-command (str dir) "ln" "-s" file-path link-to-domain)
-    (execute-host-docker-command (str dir) "certbot" "--nginx" "-d" (str (:domain_name path-and-domain) ".dudosyka.ru"))
-    (execute-host-docker-command (str dir) "systemctl" "restart" "nginx")
+    (execute-host-docker-command (str dir) "sudo" "ln" "-s" file-path link-to-domain)
+    (execute-host-docker-command (str dir) "sudo" "certbot" "--nginx" "-d" (str (:domain_name path-and-domain) ".dudosyka.ru"))
+    (execute-host-docker-command (str dir) "sudo" "systemctl" "restart" "nginx")
     (json/write-str {:success "true"})))
