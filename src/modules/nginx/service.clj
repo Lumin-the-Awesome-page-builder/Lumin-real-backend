@@ -3,7 +3,6 @@
   (:require [clojure.data.json :as json]
             [clojure.java.io :as io]
             [clojure.string :as str]
-            [clojure.string :as string]
             [clojure.tools.logging :as log]
             [modules.forms.service :refer [has-access-project?]]
             [modules.project.model :refer [insert-nginx-path-and-domain-name get-nginx-path-and-domain-name get-project-by-domain]]
@@ -53,9 +52,9 @@
         (copy-dir "/home/nginx-base" (.getAbsolutePath nginx-dir) "/home/nginx-base")
         (let [template (slurp (str search-user-nginx-path "/nginx.conf"))
               updated-content
-              (string/replace template #"\{\{(.+?)\}\}"
-                              (fn [[_ key]]
-                                (get replacements (keyword key) "")))]
+              (str/replace template #"\{\{(.+?)\}\}"
+                           (fn [[_ key]]
+                             (get replacements (keyword key) "")))]
           (spit (str search-user-nginx-path "/nginx.conf") updated-content))
         (insert-nginx-path-and-domain-name ds (:id project) search-user-nginx-path (:name validated))
         (json/write-str {:success "true"})))))
@@ -74,7 +73,7 @@
   (let [project (has-access-project? ds authorised-id project-id)
         dir (-> (fetch-config) :docker-host-path)
         path-and-domain (get-nginx-path-and-domain-name ds (:id project))
-        file-path (str (str dir) (str/replace (:nginx_path path-and-domain) "/home" "") "/nginx.conf")
+        file-path (str dir (str/replace (:nginx_path path-and-domain) "/home" "") "/nginx.conf")
         link-to-domain (str "/etc/nginx/sites-enabled/" (:domain_name path-and-domain) ".dudosyka.ru")]
     (execute-host-docker-command (str dir) "sudo" "ln" "-s" file-path link-to-domain)
     (execute-host-docker-command (str dir) "sudo" "certbot" "--nginx" "-d" (str (:domain_name path-and-domain) ".dudosyka.ru"))
