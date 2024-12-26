@@ -2,6 +2,7 @@
   (:refer-clojure :exclude [remove])
   (:require [clojure.data.json :as json]
             [clojure.java.io :as io]
+            [clojure.string :as str]
             [clojure.string :as string]
             [clojure.tools.logging :as log]
             [modules.forms.service :refer [has-access-project?]]
@@ -73,9 +74,8 @@
   (let [project (has-access-project? ds authorised-id project-id)
         dir (-> (fetch-config) :docker-host-path)
         path-and-domain (get-nginx-path-and-domain-name ds (:id project))
-        file-path (str (:nginx_path path-and-domain) "/nginx.conf")
+        file-path (str (str dir) (str/replace (:nginx_path path-and-domain) "/home" "") "/nginx.conf")
         link-to-domain (str "/etc/nginx/sites-enabled/" (:domain_name path-and-domain) ".dudosyka.ru")]
-
     (execute-host-docker-command (str dir) "sudo" "ln" "-s" file-path link-to-domain)
     (execute-host-docker-command (str dir) "sudo" "certbot" "--nginx" "-d" (str (:domain_name path-and-domain) ".dudosyka.ru"))
     (execute-host-docker-command (str dir) "sudo" "systemctl" "restart" "nginx")
