@@ -1,6 +1,7 @@
 (ns modules.nginx.service
   (:refer-clojure :exclude [remove])
   (:require [clojure.data.json :as json]
+            [me.raynes.fs :as fs]
             [modules.forms.service :refer [has-access-project?]]
             [modules.project.model :refer [get-project-by-domain update-domain-name]]
             [utils.file :refer [save-base64-file-custom-prefix]]
@@ -31,5 +32,7 @@
         domain-name (:domain_name project)]
     (when (nil? domain-name)
       (throw (ex-info "Bad request" {})))
+    (fs/delete-dir (get-domain-path domain-name))
+    (fs/mkdir (get-domain-path domain-name))
     (json/write-str
      (save-base64-file-custom-prefix (:data validated) (str (get-domain-path domain-name) "/index.html")))))
