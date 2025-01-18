@@ -14,16 +14,18 @@
 (def DomainNameSpec [:map
                      [:name :string]])
 
-(defn deploy
-  [ds authorized-id project-id data]
-  (let [validated (validator/validate DomainNameSpec data)]
-    (when (or (not (has-access-project? ds authorized-id project-id))
-              (->> validated :name (get-project-by-domain ds) some?))
-      (throw (ex-info "Bad request" {:errors "This Domain Name is already in use"})))
-    (json/write-str (update-domain-name ds project-id (:name validated)))))
-
 (defn- get-domain-path [domain-name]
   (str (:deployment-base-path (fetch-config)) "/" domain-name))
+
+(defn deploy
+  [ds authorized-id project-id data]
+  (let [validated (validator/validate DomainNameSpec data)
+        project (has-access-project? ds authorized-id project-id)]
+    (when (->> validated :name (get-project-by-domain ds) some?)
+      (throw (ex-info "Bad request" {:errors "This Domain Name is already in use"})))
+    (when (:domain_name project)
+      (fs/delete-dir (:domain_name project-id)))
+    (json/write-str (update-domain-name ds project-id (:name validated)))))
 
 (defn update-index
   [ds authorized-id project-id data]
