@@ -1,0 +1,6 @@
+services:
+  base:
+    image: ubuntu
+    volumes:
+      - "./home:/home"
+    entrypoint: /bin/bash /home/bash.sh
