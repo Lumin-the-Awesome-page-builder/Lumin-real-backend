@@ -24,7 +24,7 @@
     (when (->> validated :name (get-project-by-domain ds) some?)
       (throw (ex-info "Bad request" {:errors "This Domain Name is already in use"})))
     (when (:domain_name project)
-      (fs/delete-dir (:domain_name project-id)))
+      (fs/delete-dir (get-domain-path (:domain_name project-id))))
     (json/write-str (update-domain-name ds project-id (:name validated)))))
 
 (defn update-index
