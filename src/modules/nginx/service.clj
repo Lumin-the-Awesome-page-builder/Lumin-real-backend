@@ -1,6 +1,7 @@
 (ns modules.nginx.service
   (:refer-clojure :exclude [remove])
-  (:require [modules.forms.service :refer [has-access-project?]]
+  (:require [clojure.data.json :as json]
+            [modules.forms.service :refer [has-access-project?]]
             [modules.project.model :refer [get-project-by-domain update-domain-name]]
             [utils.file :refer [save-base64-file-custom-prefix]]
             [utils.validator :as validator]
@@ -18,7 +19,7 @@
     (when (or (not (has-access-project? ds authorized-id project-id))
               (->> validated :name (get-project-by-domain ds) some?))
       (throw (ex-info "Bad request" {:errors "This Domain Name is already in use"})))
-    (update-domain-name ds project-id (:name validated))))
+    (json/write-str update-domain-name ds project-id (:name validated))))
 
 (defn- get-domain-path [domain-name]
   (str (:deployment-base-path (fetch-config)) "/" domain-name))
@@ -30,4 +31,5 @@
         domain-name (:domain_name project)]
     (when (nil? domain-name)
       (throw (ex-info "Bad request" {})))
-    (save-base64-file-custom-prefix (:data validated) (str (get-domain-path domain-name) "/index.html"))))
+    (json/write-str
+     (save-base64-file-custom-prefix (:data validated) (str (get-domain-path domain-name) "/index.html")))))
