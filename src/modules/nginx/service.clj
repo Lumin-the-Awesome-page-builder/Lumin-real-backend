@@ -16,7 +16,7 @@
   [ds authorized-id project-id data]
   (let [validated (validator/validate DomainNameSpec data)]
     (when (or (not (has-access-project? ds authorized-id project-id))
-              (-> validated :name (get-project-by-domain ds) some?))
+              (->> validated :name (get-project-by-domain ds) some?))
       (throw (ex-info "Bad request" {:errors "This Domain Name is already in use"})))
     (update-domain-name ds project-id (:name validated))))
 
