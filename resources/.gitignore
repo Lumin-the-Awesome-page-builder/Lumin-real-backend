@@ -4,3 +4,4 @@
 /file_path.edn
 /docker_path.edn
 /docker_host_path.edn
+/deployment_base_path.edn
