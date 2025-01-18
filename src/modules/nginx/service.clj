@@ -20,7 +20,7 @@
     (when (or (not (has-access-project? ds authorized-id project-id))
               (->> validated :name (get-project-by-domain ds) some?))
       (throw (ex-info "Bad request" {:errors "This Domain Name is already in use"})))
-    (json/write-str update-domain-name ds project-id (:name validated))))
+    (json/write-str (update-domain-name ds project-id (:name validated)))))
 
 (defn- get-domain-path [domain-name]
   (str (:deployment-base-path (fetch-config)) "/" domain-name))
