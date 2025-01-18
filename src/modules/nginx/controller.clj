@@ -11,7 +11,7 @@
      (let [{:keys [datasource]} (:deps request)
            {:keys [project-id]} (:params request)
            {:keys [sub]} (:authorized request)]
-       (response/response (deploy datasource sub project-id (:params request)))))
+       (response/response (deploy datasource sub (parse-long project-id) (:params request)))))
    (POST (prefixed "/upload/:project-id") request
      (let [{:keys [datasource]} (:deps request)
            {:keys [project-id]} (:params request)
