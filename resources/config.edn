@@ -4,11 +4,11 @@
  :jwt-secret #include "jwt.edn"
  :jwt-secret-editor #include "jws.edn"
  :collaboration-token-expiring-time 172800000 ; about 2 days
- :database {:jdbcUrl "jdbc:postgresql://localhost:5432/lumin"
+ :database {:jdbcUrl "jdbc:postgresql://postgres:5432/lumin"
             :username "postgres"
             :password #include "secrets.edn"}
  :file-path #include "file_path.edn"
- :redis {:url "redis://localhost:6379"}
+ :redis {:url "redis://redis:6379"}
  :docker-path #include "docker_path.edn"
  :docker-host-path #include "docker_host_path.edn"
  :deployment-base-path #include "deployment_base_path.edn"}
