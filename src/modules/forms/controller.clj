@@ -19,7 +19,7 @@
            {:keys [sub]} (:authorized request)]
        (response/response (get-form-fields datasource sub (parse-long form-id)))))
 
-   (POST "/form-handler/:form-id/data" request
+   (POST "/lumin/form-handler/:form-id/data" request
      (let [{:keys [datasource]} (:deps request)
            {:keys [form-id]} (:params request)
            {:keys [sub]} (:authorized request)]
