@@ -8,6 +8,7 @@
             [modules.nginx.controller :as nginx]
             [modules.forms.controller :as form]
             [modules.editor.controller :as collab]
+            [modules.media.controller :as media]
             [modules.editor.service :as collab-service]
             [utils.ws :as ws]
             [components.ring-server.middleware :as middlewares]
@@ -23,7 +24,7 @@
       (prometheus-ring/initialize)))
 
 (def auth-excluded
-  [#"\/lumin\/file\/.*" #"\/lumin\/metrics" #"\/lumin\/collab\/ws" #"\/lumin\/form\/form-handler\/.*"])
+  [#"\/lumin\/file\/.*" #"\/lumin\/metrics" #"\/lumin\/collab\/ws"])
 
 (defn app-routes [component]
   (-> routes
@@ -34,6 +35,7 @@
                      (docker/routes)
                      (form/routes)
                      (nginx/routes)
+                     (media/routes)
                      [(ws/create-ws-endpoint "/lumin/collab/ws" ;Endpoint
                                              collab/ws-routes ;Router
                                              [(ws/wrap-exception-handling)

@@ -7,7 +7,7 @@ services:
   back:
     image: eclipse-temurin:latest
     volumes:
-      - ./jvm/home:/home
+      - ../../:/home
     networks:
       - iternal-lumin
       - exposed-lumin
@@ -53,8 +53,8 @@ services:
   postgres:
     build: ./postgres
     restart: always
-#    ports:
-#      - 5432:5432
+    ports:
+      - 5432:5432
     environment:
       POSTGRES_PASSWORD: my-secret-pw
     volumes:
