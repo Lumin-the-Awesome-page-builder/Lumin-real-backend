@@ -8,5 +8,4 @@
 (defn routes []
   [(GET (prefixed "/:file-name") request
      (let [{:keys [file-name]} (:params request)]
-       (-> (response/response (f/get-stream file-name))
-           (response/header "Content-Type" "image/png"))))])
+       (-> (response/response (f/get-stream file-name)))))])
