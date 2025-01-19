@@ -8,4 +8,5 @@
 (defn routes []
   [(GET (prefixed "/:file-name") request
      (let [{:keys [file-name]} (:params request)]
-       (-> (response/response (f/get-stream file-name)))))])
+       (-> (response/response (f/get-stream file-name))
+           (response/content-type "application/octet-stream"))))])
