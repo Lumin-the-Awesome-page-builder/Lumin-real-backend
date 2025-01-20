@@ -15,9 +15,10 @@
 
 (defn upload-media
   [ds authorized-id upload-data]
-  (let [validated (validator/validate UploadSpec upload-data)]
-    (file/save-base64-file (:base64 validated) (str (System/currentTimeMillis) (:name validated)))
-    (json/write-str (model/add-media ds authorized-id (str (System/currentTimeMillis) (:name validated))))))
+  (let [validated (validator/validate UploadSpec upload-data)
+        file-name (str (System/currentTimeMillis) (:name validated))]
+    (file/save-base64-file (:base64 validated) file-name)
+    (json/write-str (model/add-media ds authorized-id file-name))))
 
 (defn attach-to-project
   [ds project-id media-id]
