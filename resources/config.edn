@@ -2,7 +2,6 @@
                :join? false
                :ws-max-idle-time 3000000
                :ws-max-frame-size 51200}
-
  :jwt-secret #include "jwt.edn"
  :jwt-secret-editor #include "jws.edn"
  :collaboration-token-expiring-time 172800000 ; about 2 days
