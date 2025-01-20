@@ -6,7 +6,7 @@
             [utils.validator :as validator]))
 
 (def CreateFormSpec [:map
-                     [:name [:sequential string?]]
+                     [:name :string]
                      [:fields :string]
                      [:url-post {:optional true} string?]
                      [:url-get {:optional true} string?]])
@@ -59,7 +59,7 @@
     (json/write-str (get-all-data ds (:id form)))))
 
 (def UpdateFormSpec [:map
-                     [:name {:optional true} [:sequential string?]]
+                     [:name {:optional true} string?]
                      [:fields {:optional true} string?]
                      [:url-post {:optional true} string?]
                      [:url-get {:optional true} string?]])
