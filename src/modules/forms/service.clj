@@ -6,7 +6,7 @@
             [utils.validator :as validator]))
 
 (def CreateFormSpec [:map
-                     [:name :string]
+                     [:name [:sequential string?]]
                      [:fields :string]
                      [:url-post {:optional true} string?]
                      [:url-get {:optional true} string?]])
