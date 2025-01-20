@@ -37,7 +37,7 @@
 
 (defn update-name-dto
   [dto form]
-  (if (= nil (:name dto))
+  (if (= nil (first (:name dto)))
     (assoc dto :name (:name form))
     dto))
 

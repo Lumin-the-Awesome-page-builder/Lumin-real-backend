@@ -59,7 +59,7 @@
     (json/write-str (get-all-data ds (:id form)))))
 
 (def UpdateFormSpec [:map
-                     [:name {:optional true} string?]
+                     [:name {:optional true} [:sequential string?]]
                      [:fields {:optional true} string?]
                      [:url-post {:optional true} string?]
                      [:url-get {:optional true} string?]])
