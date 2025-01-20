@@ -7,7 +7,7 @@
    ds
    {:insert-into [:form]
     :columns [:owner_id :project_id :fields :url_post :url_get :created_at :name]
-    :values [[authorised-id (parse-long (:project-id dto)) (:fields dto) (:url-post dto) (:url-get dto) (System/currentTimeMillis) (first (:name dto))]]
+    :values [[authorised-id (parse-long (:project-id dto)) (:fields dto) (:url-post dto) (:url-get dto) (System/currentTimeMillis) (:name dto)]]
     :returning :id}))
 
 (defn get-form-by-id
@@ -37,7 +37,7 @@
 
 (defn update-name-dto
   [dto form]
-  (if (= nil (first (:name dto)))
+  (if (= nil (:name dto))
     (assoc dto :name (:name form))
     dto))
 
