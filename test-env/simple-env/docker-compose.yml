@@ -1,5 +1,5 @@
 services:
-  base:
+  {{service-name}}:
     image: ubuntu
     volumes:
       - "./home:/home"
