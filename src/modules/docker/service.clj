@@ -33,7 +33,8 @@
         (throw (ex-info "Not found" {}))))))
 
 (defn execute-host-docker-command [dir & command]
-  (-> (http/post "http://172.17.0.1:9090" {:headers {:content-type "application/json"} :body (json/write-str {:command command :dir dir})})
+  ;
+  (-> (http/post "http://host.docker.internal:9090" {:headers {:content-type "application/json"} :body (json/write-str {:command command :dir dir})})
       :body
       json/read-json))
 
@@ -258,7 +259,8 @@
   (let [docker-path (-> (fetch-config) :docker-path)
         validated (validator/validate ContainerCreateSpec environment-name)
         configuration (get-configuration-full ds configuration-id)
-        path (str authorised-id "/" (:name validated) "-" authorised-id)
+        service-name (str (:name validated) "-" authorised-id)
+        path (str authorised-id "/" service-name)
         project-dir (io/file docker-path path)
         path (str path "/" (-> configuration :path (str/split #"/") last))
         configuration-dir (io/file (:path configuration))]
@@ -267,8 +269,15 @@
       (throw (ex-info "Bad request"
                       {:environment-name (:name validated) :message "This name already in use"}))
       (do
+        (log/debug "Copy configuration from " (.getAbsolutePath configuration-dir) " to " (.getAbsolutePath project-dir))
         (.mkdirs project-dir)
         (copy-dir (.getAbsolutePath configuration-dir) (.getAbsolutePath project-dir) (.getAbsolutePath configuration-dir))
+        (let [template (slurp (str project-dir "/" (-> configuration :path (str/split #"/") last) "/docker-compose.yml"))
+              replacements {:service-name service-name}
+              updated-content (str/replace template #"\{\{(.+?)\}\}"
+                                           (fn [[_ key]]
+                                             (get replacements (keyword key) "")))]
+          (spit (str project-dir "/" (-> configuration :path (str/split #"/") last) "/docker-compose.yml") updated-content))
         (json/write-str (create-environment ds authorised-id (:name validated) path false))))))
 
 (def ExeFileSpec [:map

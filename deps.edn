@@ -48,6 +48,4 @@
            :repl {:jvm-opts ["-Dclojure.tools.logging.factory=clojure.tools.logging.impl/log4j2-factory"]}}
 
 
-
-
  :paths ["src" "resources" "dev" "deploy" "classes" "exposed_bash_service"]}
