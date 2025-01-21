@@ -15,6 +15,7 @@
             [ring.middleware.keyword-params :refer [wrap-keyword-params]]
             [ring.middleware.params :refer [wrap-params]]
             [ring.middleware.json :refer [wrap-json-params]]
+            [ring.middleware.multipart-params :refer [wrap-multipart-params]]
             [ring.middleware.cors :refer [wrap-cors]]
             [iapetos.core :as prometheus]
             [iapetos.collector.ring :as prometheus-ring]))
@@ -52,6 +53,7 @@
       (prometheus-ring/wrap-metrics registry {:path "/lumin/metrics" :exception-status 500})
       (wrap-keyword-params)
       (wrap-params)
+      (wrap-multipart-params)
       (wrap-json-params)
       (wrap-cors :access-control-allow-origin [#".*"]
                  :access-control-allow-methods [:get :put :post :delete :patch])

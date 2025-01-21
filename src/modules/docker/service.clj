@@ -9,7 +9,6 @@
                                           get-all-user-environment get-all-configurations
                                           get-configuration get-configuration-full get-containers-by-env-id update-container-status
                                           insert-or-update-container]]
-            [utils.file :as f]
             [utils.validator :as validator]
             [babashka.http-client :as http])
   (:import (java.io BufferedReader)))
@@ -95,10 +94,17 @@
       (let [result (execute-host-docker-command docker-host-path "sh" script-path (str docker-host-path "/" (:path env)))]
         (if (zero? (:exit result))
           (do
-            (let [name (nth (str/split (str (:err result)) #"\s+") 2)
-                  status (nth (str/split (str (:err result)) #"\s+") 3)]
-              (println name status)
-              (insert-or-update-container ds name status environment-id))
+            (log/info "Executed" result (:out result))
+            (let [containers (str/split (:out result) #"/")]
+              (log/info "Containers" containers)
+              (log/info "Insert result"
+                        (mapv (fn [container]
+                                (log/info "Container" container)
+                                (let [cleared (str/replace container #"\n" "")
+                                      name (-> cleared (str/split #"\+") first)
+                                      status (-> cleared (str/split #"\+") second)]
+                                  (log/info "Insert new" name status)
+                                  (insert-or-update-container ds name status environment-id))) (filter #(not= "" %) containers))))
             (get-containers ds authorised-id environment-id))
           (json/write-str {:status "error"
                            :message (:out result)})))
@@ -280,25 +286,14 @@
           (spit (str project-dir "/" (-> configuration :path (str/split #"/") last) "/docker-compose.yml") updated-content))
         (json/write-str (create-environment ds authorised-id (:name validated) path false))))))
 
-(def ExeFileSpec [:map
-                  [:configuration_id :int]
-                  [:files [:sequential [:map
-                                        [:name :string]
-                                        [:extension :string]
-                                        [:file :string]]]]])
-
-(defn get-file-by-name [files file-name]
-  (let [item (filter #(= (:name %) (name file-name)) files)]
-    (if (seq item)
-      (first item)
-      nil)))
-
 (defn process-mapping-entry [env-path entry files]
-  (let [file (get-file-by-name files (first entry))
-        path (str env-path "/" (-> entry second :path))]
-    (log/info file path entry)
-    (when (some? file)
-      (f/save-base64-file-custom-prefix (:file file) path))))
+  (let [file (get files (-> entry first name))
+        file-path (-> entry second :path)]
+    (log/info file env-path file-path)
+    (with-open [in (io/input-stream (:tempfile file))
+                out (io/output-stream (str env-path "/" file-path))]
+      (io/copy in out))
+    {file true}))
 
 (defn save-by-mapping [env-path mapping files]
   (->> mapping
@@ -306,14 +301,13 @@
        (map #(process-mapping-entry env-path % files))))
 
 (defn environment-upload
-  [ds authorised-id environment-id file-data]
+  [ds authorised-id environment-id configuration-id multipart-params]
+  (log/info "Start uploading!")
   (let [docker-path (-> (fetch-config) :docker-path)
         env (has-access-env? ds authorised-id environment-id)
-        validated (validator/validate ExeFileSpec file-data)
-        configuration (get-configuration ds (:configuration_id validated))
+        configuration (get-configuration ds configuration-id)
         env-path (str docker-path "/" (:path env))]
     (log/info env-path)
     (log/info configuration)
     (log/info env)
-    (log/info file-data)
-    (save-by-mapping env-path (:mapping configuration) (:files file-data))))
+    (save-by-mapping env-path (:mapping configuration) multipart-params)))
