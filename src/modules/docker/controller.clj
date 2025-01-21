@@ -24,11 +24,12 @@
            {:keys [sub]} (:authorized request)]
        (response/response (get-all-environments datasource sub))))
 
-   (POST (prefixed "/:environment-id/upload") request
+   (POST (prefixed "/:environment-id/:configuration-id/upload") request
      (let [{:keys [datasource]} (:deps request)
-           {:keys [environment-id]} (:params request)
+           {:keys [environment-id configuration-id]} (:params request)
+           {:keys [multipart-params]} request
            {:keys [sub]} (:authorized request)]
-       (response/response (environment-upload datasource sub (parse-long environment-id) (:params request)))))
+       (response/response (environment-upload datasource sub (parse-long environment-id) (parse-long configuration-id) multipart-params))))
 
    (POST (prefixed "/:environment-id/start/all") request
      (let [{:keys [datasource]} (:deps request)

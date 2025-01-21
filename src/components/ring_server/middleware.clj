@@ -32,12 +32,15 @@
   [handler]
   (fn [request]
     (log/info "New incoming request" (:request-method request) (:uri request) (:params request) (:headers request))
-    (let [response (handler request)]
-      (log/info "On response: ")
-      (log/info "Status: " (:status response))
-      (log/info "Headers: " (:headers response))
-      (log/info "Body: " (:body response))
-      response)))
+    (try
+      (let [response (handler request)]
+        (log/info "On response: ")
+        (log/info "Status: " (:status response))
+        (log/info "Headers: " (:headers response))
+        (log/info "Body: " (:body response))
+        response)
+      (catch Exception e
+        (log/info "Exception" e)))))
 
 (defn- parse-ex [ex]
   (case (.getMessage ex)
