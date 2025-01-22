@@ -69,4 +69,8 @@
   [ds authorised-id form-id patch-data]
   (let [form (has-access-form? ds authorised-id form-id)
         validated (validator/validate UpdateFormSpec patch-data)]
-    (json/write-str (update-form ds form-id validated form))))
+    (if (or (nil? (:url-post validated)) (= (:url-post validated) "https://example.com/save"))
+      (json/write-str (update-form ds form-id (-> validated
+                                                  (assoc :url-post (str "https://api.lumin.dudosyka.com/lumin/form-handler/" form-id "/data"))
+                                                  (assoc :url-get (str "https://api.lumin.dudosyka.com/lumin/form/" form-id "/data"))) form))
+      (json/write-str (update-form ds form-id validated form)))))
