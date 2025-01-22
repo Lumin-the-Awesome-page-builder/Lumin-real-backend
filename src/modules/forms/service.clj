@@ -56,7 +56,8 @@
 (defn get-data
   [ds _ form-id]
   (let [form (get-form-by-id ds form-id)]
-    (json/write-str (get-all-data ds (:id form)))))
+    (json/write-str (mapv (fn [row]
+                            (json/read-json (:data row))) (get-all-data ds (:id form))))))
 
 (def UpdateFormSpec [:map
                      [:name {:optional true} string?]

@@ -22,7 +22,7 @@
   [ds project-id]
   (database/execute!
    ds
-   {:select [:id :name]
+   {:select [:id :name :url_post :url_get]
     :from [:form]
     :where [:= :project_id project-id]}))
 
