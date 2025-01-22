@@ -33,7 +33,7 @@
 
 (defn execute-host-docker-command [dir & command]
   ;
-  (-> (http/post "http://host.docker.internal:9090" {:headers {:content-type "application/json"} :body (json/write-str {:command command :dir dir})})
+  (-> (http/post "http://172.17.0.1:9090" {:headers {:content-type "application/json"} :body (json/write-str {:command command :dir dir})})
       :body
       json/read-json))
 
